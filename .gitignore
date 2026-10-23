@@ -1,0 +1,13 @@
+# Local configuration and secrets - never commit
+.env
+secrets.env
+
+# Runtime data (databases, images, ICA session cache) - your data, not code
+data/
+ica_state.json
+
+# Python / OS noise
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

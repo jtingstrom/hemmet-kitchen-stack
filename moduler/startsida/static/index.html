@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Köket</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ground:#F7F4EC;
+    --surface:#FFFFFF;
+    --surface-2:#F0EBDD;
+    --ink:#2A2A22;
+    --ink-soft:#655F4F;
+    --line:#E4DDC8;
+    --shadow:rgba(42,42,34,.08);
+    --primary:#3E6B52;
+    --primary-ink:#FFFFFF;
+    --primary-soft:#E1EDE4;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#181B16; --surface:#22261F; --surface-2:#2A2E25;
+      --ink:#ECE7D9; --ink-soft:#AEA894; --line:#3A3E33;
+      --shadow:rgba(0,0,0,.35);
+      --primary:#8FC4A6; --primary-ink:#132119; --primary-soft:#293830;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;background:var(--ground);color:var(--ink);
+    font-family:"Karla",system-ui,-apple-system,sans-serif;
+    display:flex;align-items:flex-start;justify-content:center;padding:64px 24px 24px;}
+  .wrap{max-width:720px;width:100%;text-align:center;}
+  h1{font-family:"Fraunces",Georgia,serif;font-size:clamp(2rem,6vw,2.8rem);
+    font-weight:600;color:var(--primary);margin:0 0 4px;}
+  .sub{color:var(--ink-soft);font-size:1.02rem;margin:0 0 18px;}
+  .cards{display:grid;grid-template-columns:1fr;gap:8px;}
+  @media (min-width:640px){ .cards{grid-template-columns:1fr 1fr;} }
+  .card-link{display:block;background:var(--surface);border:1px solid var(--line);
+    border-radius:20px;padding:30px 24px;text-decoration:none;color:inherit;
+    box-shadow:0 1px 2px var(--shadow);transition:transform .15s ease, box-shadow .15s ease;}
+  .card-link:hover{transform:translateY(-3px);box-shadow:0 10px 24px var(--shadow);}
+  .card-icon{width:52px;height:52px;border-radius:14px;background:var(--primary-soft);
+    color:var(--primary);display:flex;align-items:center;justify-content:center;margin:0 auto 8px;}
+  .card-title{font-family:"Fraunces",Georgia,serif;font-size:1.3rem;font-weight:600;margin:0 0 3px;}
+  @media (min-width:640px){ .card-link:last-child:nth-child(odd){grid-column:1/-1;} }
+  .card-desc{color:var(--ink-soft);font-size:.92rem;margin:0;line-height:1.4;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Köket</h1>
+    <p class="sub">Recept, planering och middagsbjudningar, allt på ett ställe.</p>
+
+    <div class="cards">
+      <a class="card-link" href="/recept">
+        <div class="card-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+        </div>
+        <div class="card-title">Receptvy</div>
+        <p class="card-desc">Bläddra bland alla era recept — sökbart och med bilder.</p>
+      </a>
+
+      <a class="card-link" href="/bjudning">
+        <div class="card-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 22h8"/>
+            <path d="M12 17v5"/>
+            <path d="M7 2h10l-1 8a4 4 0 0 1-8 0Z"/>
+          </svg>
+        </div>
+        <div class="card-title">Bjudningsloggen</div>
+        <p class="card-desc">Logga vilka som varit på middag, vad ni åt och drack.</p>
+      </a>
+
+      <a class="card-link" href="/plan">
+        <div class="card-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <div class="card-title">Planering</div>
+        <p class="card-desc">Planera veckans middagar och få en inköpslista.</p>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

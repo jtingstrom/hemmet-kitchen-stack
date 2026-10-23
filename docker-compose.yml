@@ -1,0 +1,52 @@
+# Two containers:
+#   mealie   - the official Mealie image (recipes). Never modified by us.
+#   moduler  - our own Python app that hosts all custom modules
+#              (Receptvy, Bjudningsloggen, Planering, start page).
+#
+# Everything is configurable through .env (copy .env.example). By default both
+# services only listen on localhost; set MEALIE_BIND / MODULER_BIND to a LAN IP
+# (or 0.0.0.0) to reach them from other devices. There is NO authentication in
+# the custom modules - keep them on a trusted home network.
+
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.22.0   # pinned on purpose, upgrade deliberately
+    container_name: mealie
+    restart: unless-stopped
+    ports:
+      - "${MEALIE_BIND:-127.0.0.1}:${MEALIE_PORT:-9000}:9000"
+    volumes:
+      - ./data/mealie:/app/data/
+    environment:
+      TZ: ${TZ:-Europe/Stockholm}
+      BASE_URL: ${BASE_URL:-http://localhost:9000}
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-false}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+
+  moduler:
+    build: ./moduler
+    container_name: moduler
+    restart: unless-stopped
+    ports:
+      - "${MODULER_BIND:-127.0.0.1}:${MODULER_PORT:-8080}:8080"
+    volumes:
+      # One shared SQLite file for all custom modules. (The folder name is
+      # historical - it started as the Bjudningsloggen database.)
+      - ./data/bjudningslogg:/app/data
+    env_file:
+      # Optional secrets (ICA login) live in their own file so they are never
+      # overwritten by updates. The file may be absent.
+      - path: ./secrets.env
+        required: false
+    environment:
+      # Local time inside the container (used for "today" logic).
+      TZ: ${TZ:-Europe/Stockholm}
+      # Container-to-container call; normally leave as is.
+      MEALIE_URL: http://mealie:9000
+      # The address your BROWSER uses to reach Mealie (images, "Open in Mealie" links).
+      MEALIE_PUBLIC_URL: ${MEALIE_PUBLIC_URL:-http://localhost:9000}
+      MEALIE_API_TOKEN: ${MEALIE_API_TOKEN:-}
+      MEALIE_GROUP_SLUG: ${MEALIE_GROUP_SLUG:-home}
+    depends_on:
+      - mealie

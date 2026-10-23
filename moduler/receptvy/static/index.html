@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Receptvy</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ground:#F7F4EC;
+    --surface:#FFFFFF;
+    --surface-2:#F0EBDD;
+    --ink:#2A2A22;
+    --ink-soft:#655F4F;
+    --line:#E4DDC9;
+    --primary:#3E6B52;
+    --primary-ink:#FFFFFF;
+    --primary-soft:#E1EDE4;
+    --accent:#D9812E;
+    --danger:#B3452F;
+    --shadow:rgba(40,36,20,.10);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#181B16; --surface:#22261F; --surface-2:#2A2E25;
+      --ink:#ECE7D9; --ink-soft:#AEA894; --line:#3A3E33;
+      --primary:#8FC4A6; --primary-ink:#132119; --primary-soft:#293830;
+      --accent:#EFA95E; --danger:#E8927A; --shadow:rgba(0,0,0,.4);
+      color-scheme: dark;
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:"Karla",system-ui,-apple-system,sans-serif;}
+  h1,h2,.display{font-family:"Fraunces",Georgia,serif;text-wrap:balance;margin:0;}
+  button{font-family:inherit;}
+  a{color:var(--primary);}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 80px;}
+  header.top{position:sticky;top:0;z-index:20;background:var(--ground);border-bottom:1px solid var(--line);padding-block:14px;}
+  .top-inner{max-width:1080px;margin:0 auto;padding-inline:16px;display:flex;flex-direction:column;gap:12px;}
+  .brand-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .brand{font-size:clamp(1.5rem,4vw,2rem);font-weight:600;color:var(--primary);}
+  .brand small{display:block;font-family:"Karla",sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px;}
+  .search{max-width:320px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;}
+  .search input{border:0;outline:0;background:transparent;color:var(--ink);font-size:.95rem;width:100%;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;}
+  .chip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);border-radius:999px;padding:7px 14px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .chip[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;margin-top:22px;}
+  .empty,.loading{grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--ink-soft);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;text-align:left;padding:0;display:flex;flex-direction:column;box-shadow:0 1px 2px var(--shadow);}
+  .card-media{aspect-ratio:4/3;width:100%;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .card-media img{width:100%;height:100%;object-fit:cover;display:block;}
+  .card-media .initial{font-family:"Fraunces",serif;font-size:2.6rem;font-weight:600;color:var(--primary);opacity:.55;}
+  .card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1;}
+  .card-title{font-size:1.15rem;font-weight:600;line-height:1.25;}
+  .card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;}
+  .tag{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-soft);}
+  .tag.cat{background:var(--primary-soft);color:var(--primary);}
+  .overlay{position:fixed;inset:0;z-index:50;background:var(--ground);overflow-y:auto;}
+  .overlay-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:var(--ground);border-bottom:1px solid var(--line);}
+  .icon-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+  .overlay-title{font-size:1rem;font-weight:600;color:var(--ink-soft);}
+  .detail-hero{width:100%;aspect-ratio:16/9;background:var(--primary-soft);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+  .detail-hero img{width:100%;height:100%;object-fit:cover;display:block;}
+  .detail-hero .initial{font-family:"Fraunces",serif;font-size:4rem;color:var(--primary);opacity:.55;}
+  .detail-wrap{max-width:760px;margin:0 auto;padding:24px 20px 60px;}
+  .detail-title{font-size:clamp(1.6rem,4vw,2.3rem);font-weight:600;}
+  .detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .detail-source{margin-top:10px;font-size:.9rem;}
+  .btn{border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;}
+  .btn.primary{background:var(--primary);color:var(--primary-ink);}
+  .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);}
+  .action-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+  .section{margin-top:32px;}
+  .section h2{font-size:1.1rem;font-weight:600;margin-bottom:12px;}
+  .ing-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .ing-list li{display:flex;gap:10px;align-items:baseline;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:.98rem;}
+  .ing-list li::before{content:"";width:6px;height:6px;border-radius:999px;background:var(--accent);flex:none;margin-top:7px;}
+  .step-list{list-style:none;margin:0;padding:0;counter-reset:step;display:flex;flex-direction:column;gap:14px;}
+  .step-list li{counter-increment:step;display:flex;gap:14px;padding:4px 0;font-size:1rem;line-height:1.55;}
+  .step-list li::before{content:counter(step);flex:none;width:30px;height:30px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;}
+  .kitchen{position:fixed;inset:0;z-index:60;background:var(--surface);display:flex;flex-direction:column;height:100%;}
+  .kitchen-top{padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);}
+  .kitchen-title{font-weight:600;font-size:1rem;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .kitchen-progress{height:5px;background:var(--surface-2);}
+  .kitchen-progress-fill{height:100%;background:var(--accent);transition:width .2s;}
+  .kitchen-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px;text-align:center;gap:20px;overflow-y:auto;}
+  .kitchen-eyebrow{font-size:.85rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);}
+  .kitchen-step-text{font-size:clamp(1.6rem,5.5vw,2.6rem);font-weight:700;line-height:1.3;max-width:44ch;}
+  .kitchen-nav{display:flex;gap:10px;padding:14px 16px;border-top:1px solid var(--line);}
+  .kitchen-nav button{flex:1;padding:18px 10px;font-size:1.05rem;border-radius:14px;font-weight:700;border:0;cursor:pointer;}
+  .kn-prev{background:var(--surface-2);color:var(--ink);}
+  .kn-next{background:var(--primary);color:var(--primary-ink);}
+  .kn-prev:disabled,.kn-next:disabled{opacity:.4;cursor:default;}
+  .ing-drawer{border-top:1px solid var(--line);background:var(--surface-2);max-height:40vh;overflow-y:auto;padding:14px 20px;}
+  .ing-drawer h3{font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:10px;}
+  .ing-check{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:1rem;cursor:pointer;border-bottom:1px solid var(--line);text-align:left;width:100%;background:none;border-left:0;border-right:0;border-top:0;color:var(--ink);}
+  .ing-check:last-child{border-bottom:0;}
+  .ing-check .box{width:20px;height:20px;border-radius:6px;border:2px solid var(--primary);flex:none;}
+  .ing-check.done{color:var(--ink-soft);text-decoration:line-through;}
+  .ing-check.done .box{background:var(--primary);}
+  [hidden]{display:none!important;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand-row">
+      <div class="brand">Receptvy<small>Dina Mealie-recept, i köksformat</small></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <a class="btn ghost small" id="mealieCreateLink" href="#" target="_blank" rel="noopener" hidden>+ Nytt recept</a>
+        <a class="btn ghost small" id="mealieHomeLink" href="#" target="_blank" rel="noopener" hidden>Öppna Mealie ↗</a>
+        <a class="btn ghost small" href="/">Köket</a>
+        <a class="btn ghost small" href="/plan">Planering</a>
+        <a class="btn ghost small" href="/bjudning">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          Bjudningsloggen
+        </a>
+      </div>
+    </div>
+    <label class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="Sök recept…" autocomplete="off">
+    </label>
+    <div class="chips" id="chipRow"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid" id="grid"><div class="loading">Hämtar recept från Mealie…</div></div>
+</main>
+
+<section class="overlay" id="detailOverlay" hidden>
+  <div class="overlay-bar">
+    <button class="icon-btn" id="detailClose" type="button" aria-label="Stäng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="overlay-title">Recept</span>
+    <div style="width:40px;"></div>
+  </div>
+  <div class="detail-hero" id="detailHero"></div>
+  <div class="detail-wrap">
+    <h1 class="detail-title" id="detailTitle"></h1>
+    <div class="detail-meta" id="detailMeta"></div>
+    <div class="detail-source" id="detailSource"></div>
+    <div class="action-row">
+      <button class="btn primary" id="detailKitchenBtn" type="button">Kökläge →</button>
+      <a class="btn ghost" id="detailEditLink" target="_blank" rel="noopener">Redigera i Mealie ↗</a>
+    </div>
+    <div class="section"><h2>Ingredienser</h2><ul class="ing-list" id="detailIngredients"></ul></div>
+    <div class="section"><h2>Gör så här</h2><ol class="step-list" id="detailSteps"></ol></div>
+  </div>
+</section>
+
+<section class="kitchen" id="kitchenOverlay" hidden>
+  <div class="kitchen-top">
+    <button class="icon-btn" id="kitchenClose" type="button" aria-label="Avsluta kökläge">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="kitchen-title" id="kitchenTitle"></span>
+    <button class="icon-btn" id="kitchenIngBtn" type="button" aria-label="Visa ingredienser">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 10h18l-1.5 10a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1L3 10Z"/></svg>
+    </button>
+  </div>
+  <div class="kitchen-progress"><div class="kitchen-progress-fill" id="kitchenProgress"></div></div>
+  <div class="kitchen-body">
+    <span class="kitchen-eyebrow" id="kitchenEyebrow"></span>
+    <p class="kitchen-step-text" id="kitchenStepText"></p>
+  </div>
+  <div class="ing-drawer" id="ingDrawer" hidden></div>
+  <div class="kitchen-nav">
+    <button class="kn-prev" id="kitchenPrev" type="button">← Föregående</button>
+    <button class="kn-next" id="kitchenNext" type="button">Nästa →</button>
+  </div>
+</section>
+
+<script>
+(function(){
+  "use strict";
+
+  var App = { recipes: [], filterCategory: "Alla", query: "", activeId: null,
+    kitchenSteps: [], kitchenIndex: 0, kitchenChecks: {} };
+
+  function esc(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function byId(id){ return document.getElementById(id); }
+
+  function fmtTime(iso){
+    // Mealie skickar tider som ISO 8601-varaktighet, t.ex. "PT3H30M".
+    if (!iso) return null;
+    var m = /^PT(?:(\d+)H)?(?:(\d+)M)?$/.exec(iso);
+    if (!m) return iso;
+    var h = m[1] ? parseInt(m[1],10) : 0;
+    var min = m[2] ? parseInt(m[2],10) : 0;
+    if (h && min) return h + " tim " + min + " min";
+    if (h) return h + " tim";
+    if (min) return min + " min";
+    return null;
+  }
+
+  async function api(path){
+    // Relativ sökväg (inget inledande snedstreck) - appen kan ligga på
+    // valfri undersökväg (just nu /recept/) och ska ändå anropa sitt
+    // eget API, inte webbplatsens rot.
+    var res = await fetch(path.replace(/^\//, ""));
+    if (!res.ok) throw new Error("API-fel " + res.status + " för " + path);
+    return res.json();
+  }
+
+  function renderChips(categories){
+    var row = byId("chipRow");
+    var cats = ["Alla"].concat(categories);
+    row.innerHTML = cats.map(function(c){
+      var pressed = (c === App.filterCategory) ? "true" : "false";
+      return '<button class="chip" type="button" data-cat="' + esc(c) + '" aria-pressed="' + pressed + '">' + esc(c) + '</button>';
+    }).join("");
+    Array.prototype.forEach.call(row.querySelectorAll(".chip"), function(btn){
+      btn.addEventListener("click", function(){
+        App.filterCategory = btn.getAttribute("data-cat");
+        renderChips(categories);
+        renderGrid();
+      });
+    });
+  }
+
+  function filteredRecipes(){
+    var q = App.query.trim().toLowerCase();
+    return App.recipes.filter(function(r){
+      if (App.filterCategory !== "Alla" && r.category !== App.filterCategory) return false;
+      if (!q) return true;
+      return (r.name||"").toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function renderGrid(){
+    var grid = byId("grid");
+    var list = filteredRecipes();
+    if (list.length === 0){
+      grid.innerHTML = '<div class="empty">Inga recept hittades. Lägg till fler i Mealie, de dyker upp här automatiskt.</div>';
+      return;
+    }
+    grid.innerHTML = list.map(function(r){
+      var media = r.image
+        ? '<img src="' + esc(r.image) + '" alt="" loading="lazy" onerror="this.parentElement.innerHTML=\'<span class=&quot;initial&quot;>' + esc((r.name||"?").charAt(0).toUpperCase()) + '</span>\'">'
+        : '<span class="initial">' + esc((r.name||"?").charAt(0).toUpperCase()) + '</span>';
+      var time = fmtTime(r.totalTime);
+      return (
+        '<button class="card" type="button" data-slug="' + esc(r.slug) + '">' +
+          '<div class="card-media">' + media + '</div>' +
+          '<div class="card-body">' +
+            '<div class="card-title">' + esc(r.name) + '</div>' +
+            '<div class="card-meta">' +
+              (r.category ? '<span class="tag cat">' + esc(r.category) + '</span>' : '') +
+              (time ? '<span class="tag">' + esc(time) + '</span>' : '') +
+              (r.servings ? '<span class="tag">' + esc(r.servings) + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</button>'
+      );
+    }).join("");
+    Array.prototype.forEach.call(grid.querySelectorAll(".card"), function(card){
+      card.addEventListener("click", function(){ openDetail(card.getAttribute("data-slug")); });
+    });
+  }
+
+  async function openDetail(slug){
+    App.activeId = slug;
+    byId("detailOverlay").hidden = false;
+    byId("detailTitle").textContent = "Laddar …";
+    byId("detailIngredients").innerHTML = "";
+    byId("detailSteps").innerHTML = "";
+    window.scrollTo(0,0);
+    try{
+      var r = await api("/api/recipes/" + encodeURIComponent(slug));
+      renderDetail(r);
+    }catch(e){
+      byId("detailTitle").textContent = "Kunde inte hämta receptet";
+    }
+  }
+
+  function closeDetail(){ byId("detailOverlay").hidden = true; App.activeId = null; }
+
+  function renderDetail(r){
+    byId("detailHero").innerHTML = r.image
+      ? '<img src="' + esc(r.image) + '" alt="" onerror="this.parentElement.innerHTML=\'<span class=&quot;initial&quot;>' + esc((r.name||"?").charAt(0).toUpperCase()) + '</span>\'">'
+      : '<span class="initial">' + esc((r.name||"?").charAt(0).toUpperCase()) + '</span>';
+    byId("detailTitle").textContent = r.name;
+    var time = fmtTime(r.totalTime);
+    byId("detailMeta").innerHTML =
+      (r.category ? '<span class="tag cat">' + esc(r.category) + '</span>' : '') +
+      (time ? '<span class="tag">' + esc(time) + '</span>' : '') +
+      (r.servings ? '<span class="tag">' + esc(r.servings) + '</span>' : '');
+    byId("detailSource").innerHTML = r.sourceUrl
+      ? '<a href="' + esc(r.sourceUrl) + '" target="_blank" rel="noopener">Öppna originalinlägg ↗</a>' : '';
+    byId("detailEditLink").href = r.mealieEditUrl || "#";
+    byId("detailIngredients").innerHTML = (r.ingredients||[]).map(function(i){ return "<li>" + esc(i) + "</li>"; }).join("");
+    byId("detailSteps").innerHTML = (r.steps||[]).map(function(s){ return "<li>" + esc(s) + "</li>"; }).join("");
+    byId("detailKitchenBtn").onclick = function(){ openKitchen(r); };
+  }
+
+  var wakeLock = null;
+  function requestWakeLock(){
+    try{ if ("wakeLock" in navigator) navigator.wakeLock.request("screen").then(function(wl){ wakeLock = wl; }).catch(function(){}); }catch(e){}
+  }
+  function releaseWakeLock(){ try{ if (wakeLock){ wakeLock.release(); wakeLock = null; } }catch(e){} }
+  document.addEventListener("visibilitychange", function(){
+    if (document.visibilityState === "visible" && !byId("kitchenOverlay").hidden) requestWakeLock();
+  });
+
+  function openKitchen(r){
+    App.kitchenSteps = r.steps || [];
+    App.kitchenIndex = 0;
+    App.kitchenChecks = {};
+    byId("kitchenTitle").textContent = r.name;
+    renderIngDrawer(r);
+    byId("ingDrawer").hidden = true;
+    renderKitchenStep();
+    byId("kitchenOverlay").hidden = false;
+    requestWakeLock();
+  }
+  function closeKitchen(){ byId("kitchenOverlay").hidden = true; releaseWakeLock(); }
+
+  function renderKitchenStep(){
+    var total = App.kitchenSteps.length, i = App.kitchenIndex;
+    byId("kitchenEyebrow").textContent = total ? ("Steg " + (i+1) + " av " + total) : "Inga steg angivna";
+    byId("kitchenStepText").textContent = total ? App.kitchenSteps[i] : "Det här receptet saknar instruktioner i Mealie.";
+    byId("kitchenProgress").style.width = total ? (((i+1)/total)*100) + "%" : "0%";
+    byId("kitchenPrev").disabled = (i <= 0);
+    byId("kitchenNext").disabled = (i >= total-1);
+    byId("kitchenNext").textContent = (i >= total-1) ? "Klart ✓" : "Nästa →";
+  }
+  function renderIngDrawer(r){
+    var wrap = byId("ingDrawer");
+    var ings = r.ingredients || [];
+    wrap.innerHTML = '<h3>Ingredienser</h3>' + ings.map(function(ing, idx){
+      return '<button type="button" class="ing-check" data-idx="' + idx + '"><span class="box"></span><span>' + esc(ing) + '</span></button>';
+    }).join("");
+    Array.prototype.forEach.call(wrap.querySelectorAll(".ing-check"), function(btn){
+      btn.addEventListener("click", function(){
+        var idx = btn.getAttribute("data-idx");
+        App.kitchenChecks[idx] = !App.kitchenChecks[idx];
+        btn.classList.toggle("done", !!App.kitchenChecks[idx]);
+      });
+    });
+  }
+
+  byId("kitchenPrev").addEventListener("click", function(){ if (App.kitchenIndex > 0){ App.kitchenIndex--; renderKitchenStep(); } });
+  byId("kitchenNext").addEventListener("click", function(){
+    if (App.kitchenIndex < App.kitchenSteps.length-1){ App.kitchenIndex++; renderKitchenStep(); } else { closeKitchen(); }
+  });
+  byId("kitchenClose").addEventListener("click", closeKitchen);
+  byId("kitchenIngBtn").addEventListener("click", function(){ byId("ingDrawer").hidden = !byId("ingDrawer").hidden; });
+  document.addEventListener("keydown", function(e){
+    if (byId("kitchenOverlay").hidden) return;
+    if (e.key === "ArrowRight") byId("kitchenNext").click();
+    if (e.key === "ArrowLeft") byId("kitchenPrev").click();
+    if (e.key === "Escape") closeKitchen();
+  });
+  byId("detailClose").addEventListener("click", closeDetail);
+  byId("searchInput").addEventListener("input", function(e){ App.query = e.target.value; renderGrid(); });
+
+  async function boot(){
+    // Mealie-lankarna i headern - hamtas forst och oberoende av receptlistan
+    // sa de fungerar aven om listan inte gar att ladda.
+    try{
+      var cfg = await api("/api/config");
+      if (cfg.mealieCreateUrl){
+        byId("mealieCreateLink").href = cfg.mealieCreateUrl;
+        byId("mealieCreateLink").hidden = false;
+      }
+      if (cfg.mealieHomeUrl){
+        byId("mealieHomeLink").href = cfg.mealieHomeUrl;
+        byId("mealieHomeLink").hidden = false;
+      }
+    }catch(e){}
+    try{
+      var recipes = await api("/api/recipes");
+      App.recipes = recipes;
+    }catch(e){
+      byId("grid").innerHTML = '<div class="empty">Kunde inte nå Mealie. Kontrollera att containern är igång och att MEALIE_API_TOKEN är rätt satt.</div>';
+      return;
+    }
+    var categories = [];
+    try{ categories = await api("/api/categories"); }catch(e){}
+    renderChips(categories);
+    renderGrid();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

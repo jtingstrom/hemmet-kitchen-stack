@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Planering</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ground:#F7F4EC; --surface:#FFFFFF; --surface-2:#F0EBDD;
+    --ink:#2A2A22; --ink-soft:#655F4F; --line:#E4DDC9;
+    --primary:#3E6B52; --primary-ink:#FFFFFF; --primary-soft:#E1EDE4;
+    --accent:#D9812E; --accent-soft:#F7E4CC;
+    --danger:#B3452F; --danger-soft:#F5DFD7;
+    --shadow:rgba(40,36,20,.10);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#181B16; --surface:#22261F; --surface-2:#2A2E25;
+      --ink:#ECE7D9; --ink-soft:#AEA894; --line:#3A3E33;
+      --primary:#8FC4A6; --primary-ink:#132119; --primary-soft:#293830;
+      --accent:#EFA95E; --accent-soft:#3A2E1C; --danger:#E8927A; --danger-soft:#3A211C;
+      --shadow:rgba(0,0,0,.4);
+      color-scheme: dark;
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:"Karla",system-ui,-apple-system,sans-serif;}
+  h1,h2,h3{font-family:"Fraunces",Georgia,serif;text-wrap:balance;margin:0;}
+  button{font-family:inherit;}
+  a{color:var(--primary);}
+  input,select,textarea{font-family:inherit;font-size:1rem;color:var(--ink);}
+  [hidden]{display:none!important;}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 60px;}
+  header.top{position:sticky;top:0;z-index:20;background:var(--ground);border-bottom:1px solid var(--line);padding-block:14px;}
+  .top-inner{max-width:1080px;margin:0 auto;padding-inline:16px;display:flex;flex-direction:column;gap:12px;}
+  .brand-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .brand{font-size:clamp(1.5rem,4vw,2rem);font-weight:600;color:var(--primary);font-family:"Fraunces",Georgia,serif;}
+  .brand small{display:block;font-family:"Karla",sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px;}
+  .head-links{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+
+  .btn{border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;}
+  .btn.primary{background:var(--primary);color:var(--primary-ink);}
+  .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);}
+  .btn.danger{background:var(--danger-soft);color:var(--danger);}
+  .btn.small{padding:8px 14px;font-size:.85rem;}
+  .icon-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+
+  .weekbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .week-label{font-family:"Fraunces",Georgia,serif;font-size:1.15rem;font-weight:600;flex:1;min-width:160px;}
+  .week-label small{display:block;font-family:"Karla",sans-serif;font-size:.8rem;font-weight:500;color:var(--ink-soft);}
+
+  .days{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:20px;}
+  .day{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;text-align:left;cursor:pointer;min-height:130px;box-shadow:0 1px 2px var(--shadow);font:inherit;color:inherit;}
+  .day:hover{border-color:var(--primary);}
+  .day.today{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft),0 1px 2px var(--shadow);}
+  .day.past{opacity:.72;}
+  .day-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+  .day-name{font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);}
+  .day-date{font-size:.85rem;color:var(--ink-soft);}
+  .tag{font-size:.7rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--primary);color:var(--primary-ink);}
+  .day-title{font-family:"Fraunces",Georgia,serif;font-size:1.2rem;font-weight:600;line-height:1.25;}
+  .day-empty{color:var(--ink-soft);font-size:.95rem;margin-top:auto;display:flex;align-items:center;gap:6px;}
+  .day-recipe{font-size:.82rem;font-weight:600;color:var(--primary);background:var(--primary-soft);border-radius:999px;padding:3px 10px;align-self:flex-start;}
+  .day-notes{font-size:.85rem;color:var(--ink-soft);line-height:1.4;white-space:pre-wrap;}
+
+  .overlay{position:fixed;inset:0;z-index:50;background:var(--ground);overflow-y:auto;}
+  .overlay-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:var(--ground);border-bottom:1px solid var(--line);}
+  .overlay-title{font-size:1rem;font-weight:600;color:var(--ink-soft);}
+  .form-wrap{max-width:560px;margin:0 auto;padding:22px 20px 40px;display:flex;flex-direction:column;gap:22px;}
+  .form-wrap h1{font-size:clamp(1.5rem,4vw,2rem);font-weight:600;}
+  .field{display:flex;flex-direction:column;gap:6px;position:relative;}
+  .field label{font-size:.82rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ink-soft);}
+  .field .hint{font-size:.82rem;color:var(--ink-soft);}
+  .field input,.field textarea{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px;outline:0;}
+  .field input:focus,.field textarea:focus{border-color:var(--primary);}
+  .results{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+  .result{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%;}
+  .result:hover{border-color:var(--primary);}
+  .result img{width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--surface-2);flex:none;}
+  .result span{font-weight:600;}
+  .linked{display:flex;align-items:center;gap:10px;background:var(--primary-soft);color:var(--primary);border-radius:12px;padding:10px 12px;font-weight:600;}
+  .linked a{color:inherit;}
+  .linked .grow{flex:1;min-width:0;}
+  .form-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .form-actions .btn{flex:1;justify-content:center;}
+  .err{color:var(--danger);font-size:.9rem;}
+
+  .shop-wrap{max-width:640px;margin:0 auto;padding:22px 20px 60px;}
+  .shop-group{margin-top:24px;}
+  .shop-group h3{font-size:.8rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--primary);margin-bottom:8px;}
+  .shop-note{font-size:.9rem;color:var(--ink-soft);background:var(--surface-2);border-radius:10px;padding:10px 12px;}
+  .ing-list{display:flex;flex-direction:column;gap:8px;}
+  .ing-check{display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:.98rem;cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:10px;text-align:left;width:100%;color:var(--ink);}
+  .ing-check .box{width:20px;height:20px;border-radius:6px;border:2px solid var(--primary);flex:none;}
+  .ing-check.done{color:var(--ink-soft);text-decoration:line-through;}
+  .ing-check.done .box{background:var(--primary);}
+  .extra-add{display:flex;gap:8px;margin-bottom:10px;}
+  .extra-add input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px;outline:0;}
+  .extra-add input:focus{border-color:var(--primary);}
+  .extra-row{display:flex;gap:8px;align-items:stretch;}
+  .extra-row .ing-check{flex:1;min-width:0;}
+  .ica-panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .ica-panel select,.ica-panel input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px;outline:0;width:100%;}
+  .ica-panel select:focus,.ica-panel input:focus{border-color:var(--primary);}
+  .ica-panel .row{display:flex;gap:10px;flex-wrap:wrap;}
+  .ica-msg{font-size:.92rem;border-radius:10px;padding:10px 12px;}
+  .ica-msg.ok{background:var(--primary-soft);color:var(--primary);}
+  .ica-msg.bad{background:var(--danger-soft);color:var(--danger);}
+  .empty{text-align:center;padding:48px 20px;color:var(--ink-soft);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand-row">
+      <div class="brand">Planering<small>Veckans middagar</small></div>
+      <div class="head-links">
+        <a class="btn ghost small" href="/recept">Receptvy</a>
+        <a class="btn ghost small" href="/bjudning">Bjudningsloggen</a>
+        <a class="btn ghost small" href="/">Köket</a>
+      </div>
+    </div>
+    <div class="weekbar">
+      <button class="icon-btn" id="prevWeek" type="button" aria-label="Föregående vecka">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="week-label" id="weekLabel"></div>
+      <button class="icon-btn" id="nextWeek" type="button" aria-label="Nästa vecka">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="btn ghost small" id="todayBtn" type="button">Idag</button>
+      <button class="btn primary small" id="shopBtn" type="button">Inköpslista</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="days" id="days"></div>
+</main>
+
+<!-- Redigera dag -->
+<section class="overlay" id="editOverlay" hidden>
+  <div class="overlay-bar">
+    <button class="icon-btn" id="editClose" type="button" aria-label="Stäng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="overlay-title">Middag</span>
+    <div style="width:40px;"></div>
+  </div>
+  <form class="form-wrap" id="editForm" autocomplete="off">
+    <div>
+      <h1 id="editHeading"></h1>
+    </div>
+    <div class="field">
+      <label for="eTitle">Vad ska vi äta?</label>
+      <input type="text" id="eTitle" placeholder="T.ex. Köttfärssås, eller bara “Något med fisk”">
+      <span class="hint">Räcker med några ord - recept och detaljer kan du lägga till senare.</span>
+    </div>
+    <div class="field">
+      <label for="eSearch">Recept i Mealie (valfritt)</label>
+      <div class="linked" id="eLinked" hidden>
+        <span class="grow" id="eLinkedName"></span>
+        <button type="button" class="btn ghost small" id="eUnlink">Ta bort koppling</button>
+      </div>
+      <input type="text" id="eSearch" placeholder="Sök bland era recept…">
+      <div class="results" id="eResults"></div>
+    </div>
+    <div class="field">
+      <label for="eNotes">Anteckningar (valfritt)</label>
+      <textarea id="eNotes" rows="3" placeholder="T.ex. gäster, tid, saker att komma ihåg"></textarea>
+    </div>
+    <div class="err" id="eError" hidden></div>
+    <div class="form-actions">
+      <button type="button" class="btn danger" id="eDelete" hidden>Ta bort</button>
+      <button type="submit" class="btn primary" id="eSave">Spara</button>
+    </div>
+  </form>
+</section>
+
+<!-- Inköpslista -->
+<section class="overlay" id="shopOverlay" hidden>
+  <div class="overlay-bar">
+    <button class="icon-btn" id="shopClose" type="button" aria-label="Stäng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="overlay-title">Inköpslista</span>
+    <div style="width:40px;"></div>
+  </div>
+  <div class="shop-wrap">
+    <h1 id="shopHeading" style="font-size:clamp(1.5rem,4vw,2rem);font-weight:600;"></h1>
+    <div id="icaBar" style="margin-top:14px;" hidden>
+      <button class="btn ghost small" id="icaBtn" type="button">Skicka till ICA</button>
+    </div>
+    <div class="shop-group" id="icaPanel" hidden>
+      <h3>Skicka till ICA</h3>
+      <div class="ica-panel">
+        <div class="hint" id="icaHint" style="font-size:.9rem;color:var(--ink-soft);"></div>
+        <select id="icaList" aria-label="ICA-lista"></select>
+        <input type="text" id="icaNewTitle" placeholder="Namn på den nya listan" hidden>
+        <div class="row">
+          <button type="button" class="btn primary small" id="icaSend">Skicka</button>
+          <button type="button" class="btn ghost small" id="icaCancel">Stäng</button>
+        </div>
+        <div class="ica-msg" id="icaMsg" hidden></div>
+      </div>
+    </div>
+    <div class="shop-group" id="extrasSection" hidden>
+      <h3>Egna varor</h3>
+      <form class="extra-add" id="extraForm" autocomplete="off">
+        <input type="text" id="extraInput" placeholder="Lägg till vara, t.ex. mjölk" aria-label="Ny vara">
+        <button type="submit" class="btn primary small">Lägg till</button>
+      </form>
+      <div class="ing-list" id="extrasList"></div>
+    </div>
+    <div id="shopBody"></div>
+  </div>
+</section>
+
+<script>
+(function(){
+  var DAYS = ["Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag","Söndag"];
+  var MONTHS = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+  var MONTHS_LONG = ["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"];
+
+  var App = { weekStart: null, entries: {}, editing: null, linked: null };
+
+  function byId(id){ return document.getElementById(id); }
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  async function api(path, options){
+    // Relativ sokvag - appen ligger pa /plan/, inte pa webbplatsens rot.
+    var res = await fetch(path.replace(/^\//, ""), options);
+    if (!res.ok){
+      var msg = "Fel " + res.status;
+      try{ var j = await res.json(); if (j.detail) msg = j.detail; }catch(e){}
+      throw new Error(msg);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  // ---------- Datum (lokal tid - aldrig toISOString, det ger UTC) ----------
+  function ymd(d){
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
+  }
+  function parseYmd(s){
+    var p = s.split("-");
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  function addDays(d, n){
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  }
+  function mondayOf(d){
+    var wd = (d.getDay() + 6) % 7; // mandag = 0
+    return addDays(new Date(d.getFullYear(), d.getMonth(), d.getDate()), -wd);
+  }
+  function isoWeek(d){
+    var t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var dayNum = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - dayNum);
+    var yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil(((t - yearStart) / 86400000 + 1) / 7);
+  }
+  function rangeLabel(start){
+    var end = addDays(start, 6);
+    if (start.getMonth() === end.getMonth()){
+      return start.getDate() + "–" + end.getDate() + " " + MONTHS[end.getMonth()] + " " + end.getFullYear();
+    }
+    return start.getDate() + " " + MONTHS[start.getMonth()] + " – " + end.getDate() + " " + MONTHS[end.getMonth()] + " " + end.getFullYear();
+  }
+
+  // ---------- Veckovy ----------
+  async function loadWeek(){
+    var start = App.weekStart;
+    byId("weekLabel").innerHTML = "Vecka " + isoWeek(start) + "<small>" + esc(rangeLabel(start)) + "</small>";
+    byId("days").innerHTML = '<div class="empty" style="grid-column:1/-1;">Hämtar …</div>';
+    var list = [];
+    try{ list = await api("/api/plan?start=" + ymd(start) + "&days=7"); }
+    catch(e){
+      byId("days").innerHTML = '<div class="empty" style="grid-column:1/-1;">Kunde inte hämta planen: ' + esc(e.message) + '</div>';
+      return;
+    }
+    App.entries = {};
+    list.forEach(function(en){ App.entries[en.date] = en; });
+    renderWeek();
+  }
+
+  function renderWeek(){
+    var today = ymd(new Date());
+    var html = "";
+    for (var i = 0; i < 7; i++){
+      var d = addDays(App.weekStart, i), key = ymd(d), en = App.entries[key];
+      var cls = "day" + (key === today ? " today" : "") + (key < today ? " past" : "");
+      html += '<button type="button" class="' + cls + '" data-date="' + key + '">' +
+        '<div class="day-head"><span class="day-name">' + DAYS[i] + '</span>' +
+        '<span class="day-date">' + (key === today ? '<span class="tag">Idag</span> ' : '') + d.getDate() + ' ' + MONTHS[d.getMonth()] + '</span></div>';
+      if (en){
+        html += '<div class="day-title">' + esc(en.title) + '</div>';
+        if (en.mealieSlug) html += '<span class="day-recipe">Recept: ' + esc(en.mealieName || "kopplat") + '</span>';
+        if (en.notes) html += '<div class="day-notes">' + esc(en.notes) + '</div>';
+      } else {
+        html += '<div class="day-empty">+ Planera middag</div>';
+      }
+      html += '</button>';
+    }
+    byId("days").innerHTML = html;
+    Array.prototype.forEach.call(byId("days").querySelectorAll(".day"), function(b){
+      b.addEventListener("click", function(){ openEdit(b.getAttribute("data-date")); });
+    });
+  }
+
+  byId("prevWeek").addEventListener("click", function(){ App.weekStart = addDays(App.weekStart, -7); loadWeek(); });
+  byId("nextWeek").addEventListener("click", function(){ App.weekStart = addDays(App.weekStart, 7); loadWeek(); });
+  byId("todayBtn").addEventListener("click", function(){ App.weekStart = mondayOf(new Date()); loadWeek(); });
+
+  // ---------- Redigera dag ----------
+  var searchTimer = null, searchSeq = 0;
+
+  function setLinked(rec){
+    App.linked = rec; // {slug, name} eller null
+    byId("eLinked").hidden = !rec;
+    if (rec){
+      byId("eLinkedName").textContent = "Recept: " + rec.name;
+    }
+  }
+
+  function openEdit(key){
+    App.editing = key;
+    var d = parseYmd(key), en = App.entries[key];
+    byId("editHeading").textContent = DAYS[(d.getDay() + 6) % 7] + " " + d.getDate() + " " + MONTHS_LONG[d.getMonth()];
+    byId("eTitle").value = en ? en.title : "";
+    byId("eNotes").value = en && en.notes ? en.notes : "";
+    byId("eSearch").value = "";
+    byId("eResults").innerHTML = "";
+    byId("eError").hidden = true;
+    byId("eDelete").hidden = !en;
+    setLinked(en && en.mealieSlug ? { slug: en.mealieSlug, name: en.mealieName || en.title } : null);
+    byId("editOverlay").hidden = false;
+    window.scrollTo(0, 0);
+    byId("eTitle").focus();
+  }
+  function closeEdit(){ byId("editOverlay").hidden = true; App.editing = null; }
+  byId("editClose").addEventListener("click", closeEdit);
+
+  byId("eSearch").addEventListener("input", function(){
+    var q = byId("eSearch").value.trim();
+    clearTimeout(searchTimer);
+    if (!q){ byId("eResults").innerHTML = ""; return; }
+    searchTimer = setTimeout(async function(){
+      var seq = ++searchSeq;
+      var res = [];
+      try{ res = await api("/api/mealie/search?q=" + encodeURIComponent(q)); }catch(e){}
+      if (seq !== searchSeq) return; // ett nyare sok har startat
+      var box = byId("eResults");
+      if (!res.length){
+        box.innerHTML = '<div class="hint" style="color:var(--ink-soft);font-size:.9rem;">Inga recept hittades.</div>';
+        return;
+      }
+      box.innerHTML = res.map(function(r, i){
+        return '<button type="button" class="result" data-i="' + i + '">' +
+          (r.image ? '<img src="' + esc(r.image) + '" alt="" onerror="this.style.visibility=\'hidden\'">' : '') +
+          '<span>' + esc(r.name) + '</span></button>';
+      }).join("");
+      Array.prototype.forEach.call(box.querySelectorAll(".result"), function(b){
+        b.addEventListener("click", function(){
+          var r = res[+b.getAttribute("data-i")];
+          var prev = App.linked ? App.linked.name : null;
+          var cur = byId("eTitle").value.trim();
+          // Fyll i titeln om den ar tom - eller bara var det tidigare
+          // receptets namn; skriv aldrig over en egen titel.
+          if (!cur || cur === prev) byId("eTitle").value = r.name;
+          setLinked({ slug: r.slug, name: r.name });
+          byId("eSearch").value = "";
+          box.innerHTML = "";
+        });
+      });
+    }, 250);
+  });
+
+  byId("eUnlink").addEventListener("click", function(){ setLinked(null); });
+
+  byId("editForm").addEventListener("submit", async function(ev){
+    ev.preventDefault();
+    var title = byId("eTitle").value.trim();
+    var err = byId("eError");
+    if (!title){
+      err.textContent = "Skriv vad ni ska äta (eller välj ett recept).";
+      err.hidden = false;
+      return;
+    }
+    try{
+      await api("/api/plan/" + App.editing, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title,
+          mealieSlug: App.linked ? App.linked.slug : null,
+          mealieName: App.linked ? App.linked.name : null,
+          notes: byId("eNotes").value.trim() || null
+        })
+      });
+      closeEdit();
+      await loadWeek();
+    }catch(e){
+      err.textContent = "Kunde inte spara: " + e.message;
+      err.hidden = false;
+    }
+  });
+
+  byId("eDelete").addEventListener("click", async function(){
+    var en = App.entries[App.editing];
+    if (!en) return;
+    if (!window.confirm('Ta bort "' + en.title + '" från planen?')) return;
+    try{
+      await api("/api/plan/" + App.editing, { method: "DELETE" });
+      closeEdit();
+      await loadWeek();
+    }catch(e){
+      byId("eError").textContent = "Kunde inte ta bort: " + e.message;
+      byId("eError").hidden = false;
+    }
+  });
+
+  // ---------- Inköpslista ----------
+  var shop = { start: null, extras: [] };
+
+  byId("shopClose").addEventListener("click", function(){ byId("shopOverlay").hidden = true; });
+
+  function renderExtras(){
+    // Antalet varor som skickas till ICA beror pa egna varor - hall det i takt.
+    if (!byId("icaPanel").hidden) updateIcaHint();
+    var box = byId("extrasList");
+    if (!shop.extras.length){
+      box.innerHTML = '<div class="shop-note">Inga egna varor än - lägg till det som inte finns i något recept.</div>';
+      return;
+    }
+    box.innerHTML = shop.extras.map(function(x){
+      return '<div class="extra-row" data-id="' + x.id + '">' +
+        '<button type="button" class="ing-check extra-check' + (x.done ? ' done' : '') + '"><span class="box"></span><span>' + esc(x.text) + '</span></button>' +
+        '<button type="button" class="icon-btn extra-del" aria-label="Ta bort ' + esc(x.text) + '">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+        '</button></div>';
+    }).join("");
+    Array.prototype.forEach.call(box.querySelectorAll(".extra-row"), function(row){
+      var id = +row.getAttribute("data-id");
+      var item = shop.extras.filter(function(x){ return x.id === id; })[0];
+      row.querySelector(".extra-check").addEventListener("click", async function(){
+        var next = !item.done;
+        item.done = next; // direkt i vyn, rullas tillbaka om det misslyckas
+        renderExtras();
+        try{
+          await api("/api/extras/" + id, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ done: next })
+          });
+        }catch(e){ item.done = !next; renderExtras(); }
+      });
+      row.querySelector(".extra-del").addEventListener("click", async function(){
+        try{
+          await api("/api/extras/" + id, { method: "DELETE" });
+          shop.extras = shop.extras.filter(function(x){ return x.id !== id; });
+          renderExtras();
+        }catch(e){ alert("Kunde inte ta bort: " + e.message); }
+      });
+    });
+  }
+
+  byId("extraForm").addEventListener("submit", async function(ev){
+    ev.preventDefault();
+    var input = byId("extraInput");
+    var text = input.value.trim();
+    if (!text) return;
+    try{
+      var created = await api("/api/extras", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weekStart: ymd(shop.start), text: text })
+      });
+      shop.extras.push(created);
+      input.value = "";
+      renderExtras();
+      input.focus();
+    }catch(e){ alert("Kunde inte lägga till: " + e.message); }
+  });
+
+  // ---- Skicka till ICA ----
+  var NEW_LIST = "__new__";
+
+  // Alla varor som INTE ar avbockade - recept-ingredienser fran vyn och
+  // egna varor. Avbockade (t.ex. "det har jag hemma") skickas inte.
+  function icaItems(){
+    var out = [];
+    Array.prototype.forEach.call(byId("shopBody").querySelectorAll(".ing-check:not(.done)"), function(b){
+      out.push(b.querySelector("span:last-child").textContent.trim());
+    });
+    shop.extras.forEach(function(x){ if (!x.done) out.push(x.text); });
+    return out.filter(Boolean);
+  }
+  function icaMsg(text, ok){
+    var m = byId("icaMsg");
+    m.textContent = text;
+    m.className = "ica-msg " + (ok ? "ok" : "bad");
+    m.hidden = !text;
+  }
+  function updateIcaHint(){
+    var n = icaItems().length;
+    byId("icaHint").textContent = n
+      ? n + " varor skickas (avbockade hoppas över). Varor som redan ligger oavbockade i listan läggs inte till igen."
+      : "Inga varor att skicka - allt är avbockat eller listan är tom.";
+  }
+
+  byId("icaBtn").addEventListener("click", async function(){
+    var panel = byId("icaPanel");
+    panel.hidden = false;
+    icaMsg("", true);
+    updateIcaHint();
+    var sel = byId("icaList");
+    sel.innerHTML = '<option>Hämtar dina ICA-listor …</option>';
+    sel.disabled = true;
+    try{
+      var lists = await api("/api/ica/lists");
+      sel.innerHTML = lists.map(function(l){
+        return '<option value="' + esc(l.id) + '">' + esc(l.title) + '</option>';
+      }).join("") + '<option value="' + NEW_LIST + '">+ Ny lista …</option>';
+      if (!lists.length) sel.value = NEW_LIST;
+      sel.disabled = false;
+      byId("icaNewTitle").value = "Veckans middagar v" + isoWeek(shop.start);
+      byId("icaNewTitle").hidden = sel.value !== NEW_LIST;
+      updateIcaHint();
+    }catch(e){
+      sel.innerHTML = "";
+      icaMsg("Kunde inte hämta ICA-listorna: " + e.message, false);
+    }
+  });
+  byId("icaList").addEventListener("change", function(){
+    byId("icaNewTitle").hidden = byId("icaList").value !== NEW_LIST;
+  });
+  byId("icaCancel").addEventListener("click", function(){ byId("icaPanel").hidden = true; });
+  byId("icaSend").addEventListener("click", async function(){
+    var items = icaItems();
+    if (!items.length){
+      icaMsg("Inga varor att skicka - lägg till egna varor eller koppla recept (och bocka inte av allt).", false);
+      return;
+    }
+    var btn = byId("icaSend");
+    var sel = byId("icaList");
+    if (sel.disabled || !sel.value){
+      icaMsg("ICA-listorna är inte inlästa än - vänta en stund eller tryck på “Skicka till ICA” igen.", false);
+      return;
+    }
+    var body = { items: items };
+    if (sel.value === NEW_LIST) body.newListTitle = byId("icaNewTitle").value.trim();
+    else body.listId = sel.value;
+    btn.disabled = true;
+    btn.textContent = "Skickar …";
+    icaMsg("", true);
+    try{
+      var r = await api("/api/ica/send", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      var txt = r.added + " varor tillagda i ICA-listan “" + (r.listTitle || "") + "”.";
+      if (r.skipped) txt += " " + r.skipped + " fanns redan och hoppades över.";
+      icaMsg(txt, true);
+    }catch(e){
+      icaMsg("Kunde inte skicka: " + e.message, false);
+    }
+    btn.textContent = "Skicka";
+    btn.disabled = false;
+  });
+  // Hall antalet uppdaterat nar man bockar av varor medan panelen ar oppen.
+  byId("shopOverlay").addEventListener("click", function(){
+    if (!byId("icaPanel").hidden) setTimeout(updateIcaHint, 0);
+  });
+
+  byId("shopBtn").addEventListener("click", async function(){
+    var start = App.weekStart;
+    shop.start = start;
+    shop.extras = [];
+    byId("icaPanel").hidden = true;
+    byId("icaBar").hidden = true;
+    api("/api/ica/status").then(function(s){ byId("icaBar").hidden = !s.configured; }).catch(function(){});
+    byId("shopHeading").textContent = "Vecka " + isoWeek(start) + " · " + rangeLabel(start);
+    byId("extrasSection").hidden = true;
+    byId("shopBody").innerHTML = '<div class="empty">Hämtar ingredienser från Mealie …</div>';
+    byId("shopOverlay").hidden = false;
+    window.scrollTo(0, 0);
+    var data;
+    try{ data = await api("/api/shopping-list?start=" + ymd(start) + "&days=7"); }
+    catch(e){
+      byId("shopBody").innerHTML = '<div class="empty">Kunde inte hämta inköpslistan: ' + esc(e.message) + '</div>';
+      return;
+    }
+    shop.extras = data.extras || [];
+    byId("extrasSection").hidden = false;
+    renderExtras();
+    if (!data.groups.length){
+      byId("shopBody").innerHTML = '<div class="empty">Inga middagar planerade den här veckan än.</div>';
+      return;
+    }
+    byId("shopBody").innerHTML = data.groups.map(function(g){
+      var d = parseYmd(g.date);
+      var head = DAYS[(d.getDay() + 6) % 7] + " " + d.getDate() + " " + MONTHS[d.getMonth()] + " · " + esc(g.title);
+      var body;
+      if (!g.linked){
+        body = '<div class="shop-note">Inget recept kopplat - lägg till ingredienser själv (eller koppla ett recept på dagen).</div>';
+      } else if (!g.ingredients.length){
+        body = '<div class="shop-note">Hittade inga ingredienser i receptet.</div>';
+      } else {
+        body = '<div class="ing-list">' + g.ingredients.map(function(t){
+          return '<button type="button" class="ing-check"><span class="box"></span><span>' + esc(t) + '</span></button>';
+        }).join("") + '</div>';
+      }
+      return '<div class="shop-group"><h3>' + head + '</h3>' + body + '</div>';
+    }).join("");
+    Array.prototype.forEach.call(byId("shopBody").querySelectorAll(".ing-check"), function(b){
+      b.addEventListener("click", function(){ b.classList.toggle("done"); });
+    });
+  });
+
+  App.weekStart = mondayOf(new Date());
+  loadWeek();
+})();
+</script>
+</body>
+</html>

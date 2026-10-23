@@ -1,0 +1,1714 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bjudningsloggen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --ground:#F7F4EC;
+    --surface:#FFFFFF;
+    --surface-2:#F0EBDD;
+    --ink:#2A2A22;
+    --ink-soft:#655F4F;
+    --line:#E4DDC9;
+    --primary:#3E6B52;
+    --primary-ink:#FFFFFF;
+    --primary-soft:#E1EDE4;
+    --accent:#D9812E;
+    --accent-soft:#F7E4CC;
+    --danger:#B3452F;
+    --danger-soft:#F5DFD7;
+    --shadow:rgba(40,36,20,.10);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#181B16; --surface:#22261F; --surface-2:#2A2E25;
+      --ink:#ECE7D9; --ink-soft:#AEA894; --line:#3A3E33;
+      --primary:#8FC4A6; --primary-ink:#132119; --primary-soft:#293830;
+      --accent:#EFA95E; --accent-soft:#3A2E1C; --danger:#E8927A; --danger-soft:#3A211C;
+      --shadow:rgba(0,0,0,.4);
+      color-scheme: dark;
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:"Karla",system-ui,-apple-system,sans-serif;}
+  h1,h2,h3,.display{font-family:"Fraunces",Georgia,serif;text-wrap:balance;margin:0;}
+  button{font-family:inherit;}
+  a{color:var(--primary);}
+  input,select,textarea{font-family:inherit;font-size:1rem;color:var(--ink);}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 100px;}
+  header.top{position:sticky;top:0;z-index:20;background:var(--ground);border-bottom:1px solid var(--line);padding-block:14px;}
+  .top-inner{max-width:1080px;margin:0 auto;padding-inline:16px;display:flex;flex-direction:column;gap:12px;}
+  .brand-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .brand{font-size:clamp(1.5rem,4vw,2rem);font-weight:600;color:var(--primary);}
+  .brand small{display:block;font-family:"Karla",sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px;}
+  .search{max-width:320px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;}
+  .search input{border:0;outline:0;background:transparent;color:var(--ink);font-size:.95rem;width:100%;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;}
+  .chip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);border-radius:999px;padding:7px 14px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .chip[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink);}
+  .chip.small{padding:5px 12px;font-size:.78rem;flex:none;}
+  /* Knappen visar "Barn"/"Vuxen" beroende på faktiskt state, sa det aldrig
+     rader sig ut som att alla ar barn - texten sjalv sager vilket som galler. */
+  .tag{font-size:.72rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-soft);}
+  .tag.host{background:var(--accent-soft);color:var(--accent);}
+  .tag.upcoming-tag{background:var(--accent);color:var(--primary-ink);}
+  .tag.course{background:var(--primary-soft);color:var(--primary);}
+  .tag.overnight-tag{background:var(--primary-soft);color:var(--primary);}
+  .tag.child-tag{background:var(--primary-soft);color:var(--primary);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-top:22px;}
+  .empty,.loading{grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--ink-soft);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;text-align:left;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 2px var(--shadow);}
+  .card.upcoming{background:var(--accent-soft);border-color:var(--accent);}
+  .card-date{font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);}
+  .card-title{font-size:1.2rem;font-weight:600;line-height:1.25;font-family:"Fraunces",serif;}
+  .card-guests{font-size:.92rem;color:var(--ink-soft);}
+  .card-dishes{font-size:.88rem;color:var(--ink-soft);line-height:1.4;}
+  .card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;}
+
+  .guest-row{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;box-shadow:0 1px 2px var(--shadow);}
+  .guest-row-name{font-weight:600;font-size:1.05rem;}
+  .guest-row-meta{font-size:.85rem;color:var(--ink-soft);}
+  .guest-list{display:flex;flex-direction:column;gap:10px;margin-top:22px;}
+
+  .topping-adder{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;}
+  .topping-adder input{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px;outline:0;}
+  .topping-adder input:focus{border-color:var(--primary);}
+  .topping-category{margin-bottom:20px;}
+  .topping-category h3{font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--primary);margin-bottom:8px;}
+  .topping-row{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .topping-row-name{font-weight:600;font-size:.98rem;}
+  .topping-row-meta{font-size:.8rem;color:var(--ink-soft);margin-top:1px;}
+  .topping-row .icon-btn{width:32px;height:32px;}
+  .topping-row .icon-btn:disabled{opacity:.3;cursor:default;}
+
+  .fab{position:fixed;right:20px;bottom:24px;z-index:30;background:var(--primary);color:var(--primary-ink);border:0;border-radius:999px;padding:16px 22px;font-weight:700;font-size:.98rem;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 4px 14px var(--shadow);}
+
+  .overlay{position:fixed;inset:0;z-index:50;background:var(--ground);overflow-y:auto;}
+  .overlay-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;background:var(--ground);border-bottom:1px solid var(--line);}
+  .icon-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
+  .overlay-title{font-size:1rem;font-weight:600;color:var(--ink-soft);}
+
+  .detail-wrap{max-width:720px;margin:0 auto;padding:24px 20px 60px;}
+  .detail-title{font-size:clamp(1.6rem,4vw,2.2rem);font-weight:600;}
+  .detail-date{color:var(--ink-soft);font-size:.95rem;margin-top:4px;}
+  .detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .action-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+  .btn{border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;}
+  .btn.primary{background:var(--primary);color:var(--primary-ink);}
+  .btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);}
+  .btn.danger{background:var(--danger-soft);color:var(--danger);}
+  .btn.small{padding:8px 14px;font-size:.85rem;}
+
+  .section{margin-top:32px;}
+  .section h2{font-size:1.1rem;font-weight:600;margin-bottom:12px;}
+  .guest-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .course-group{margin-bottom:16px;}
+  .course-group h3{font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--primary);margin-bottom:8px;}
+  .dish-list,.drink-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .ing-list{display:flex;flex-direction:column;gap:8px;}
+  .ing-check{display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:.98rem;cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:10px;text-align:left;width:100%;color:var(--ink);}
+  .ing-check .box{width:20px;height:20px;border-radius:6px;border:2px solid var(--primary);flex:none;}
+  .ing-check.done{color:var(--ink-soft);text-decoration:line-through;}
+  .ing-check.done .box{background:var(--primary);}
+  .dish-list li,.drink-item{padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:.98rem;}
+  .drink-item{display:flex;flex-direction:column;gap:2px;}
+  .drink-name{font-weight:600;}
+  .drink-sub{font-size:.85rem;color:var(--ink-soft);}
+  .notes-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:.95rem;line-height:1.5;white-space:pre-wrap;}
+
+  /* Formulär */
+  .form-wrap{max-width:640px;margin:0 auto;padding:22px 20px 100px;display:flex;flex-direction:column;gap:26px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:.82rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ink-soft);}
+  .field input,.field select,.field textarea{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 13px;outline:0;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-row.three{grid-template-columns:1fr 1fr 1fr;}
+  fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;}
+  legend{font-family:"Fraunces",serif;font-size:1.15rem;font-weight:600;margin-bottom:4px;padding:0;}
+  .legend-sub{font-size:.85rem;color:var(--ink-soft);font-family:"Karla",sans-serif;font-weight:400;margin-top:2px;}
+  /* Egen bakgrund/ram sa den ar lattare att upptacka bland de ovriga,
+     annars helt osynliga faltgranserna i formuläret. */
+  .fieldset-callout{background:var(--primary-soft);border:1px solid var(--primary);border-radius:14px;padding:16px 18px;}
+
+  .guest-adder{display:flex;gap:8px;}
+  .guest-adder input{flex:1;}
+  .guest-adder select{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:0;}
+  .guest-chip{display:inline-flex;align-items:center;gap:6px;background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:6px 8px 6px 14px;font-size:.9rem;font-weight:600;}
+  .guest-chip button{border:0;background:none;color:inherit;cursor:pointer;width:20px;height:20px;border-radius:999px;display:flex;align-items:center;justify-content:center;opacity:.7;}
+  .guest-chip button:hover{opacity:1;background:rgba(0,0,0,.08);}
+
+  /* Familjekort i Familjer-fliken - egen kortstil (inte samma som
+     topping-kategorirubriken) eftersom en familj ar en egen post man
+     redigerar/tar bort, inte bara en rubrik som grupperar andra rader. */
+  .family-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 2px var(--shadow);}
+  .family-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .family-card-head h3{margin:0;font-size:1.05rem;font-weight:700;color:var(--ink);}
+  .family-card-actions{display:flex;gap:6px;flex:none;}
+  .family-card .icon-btn{width:32px;height:32px;}
+  .family-card .icon-btn:disabled{opacity:.3;cursor:default;}
+  .family-members{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .family-empty-hint{font-size:.85rem;color:var(--ink-soft);margin-top:10px;}
+  .family-card .guest-adder{margin-top:12px;}
+
+  .row-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;position:relative;}
+  .row-card .remove-row{position:absolute;top:10px;right:10px;}
+  .row-grid{display:grid;grid-template-columns:140px 1fr;gap:10px;}
+  .row-grid.drink{grid-template-columns:1fr;}
+  .drink-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .add-row-btn{align-self:flex-start;background:var(--surface-2);border:1px dashed var(--line);color:var(--ink-soft);border-radius:10px;padding:10px 16px;font-weight:600;font-size:.9rem;cursor:pointer;}
+
+  .dish-toppings-toggle{align-self:flex-start;background:none;border:0;color:var(--primary);font-weight:600;font-size:.85rem;cursor:pointer;padding:2px 0;}
+  .dish-toppings-box{background:var(--surface-2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;}
+  .dish-topping-adder{display:flex;gap:8px;}
+  .dish-topping-adder input{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:0;}
+  .dish-topping-chips{display:flex;flex-wrap:wrap;gap:8px;}
+
+  .form-actions{position:sticky;bottom:0;background:var(--ground);border-top:1px solid var(--line);padding:14px 20px;display:flex;gap:10px;margin:0 -20px;}
+  .form-actions .btn{flex:1;justify-content:center;}
+
+  [hidden]{display:none!important;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand-row">
+      <div class="brand">Bjudningsloggen<small>Vem, vad och vilket vin</small></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <a class="btn ghost small" href="/">Köket</a>
+        <a class="btn ghost small" href="/recept">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          Receptvy
+        </a>
+      </div>
+    </div>
+    <label class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="text" placeholder="Sök på gäst, rätt, vin…" autocomplete="off">
+    </label>
+    <div class="chips">
+      <button class="chip" type="button" data-view="all" aria-pressed="true">Alla</button>
+      <button class="chip" type="button" data-view="upcoming" aria-pressed="false">Kommande</button>
+      <button class="chip" type="button" data-view="history" aria-pressed="false">Historik</button>
+      <button class="chip" type="button" data-view="overnight" aria-pressed="false">🌙 Övernattning</button>
+      <button class="chip" type="button" data-view="guests" aria-pressed="false">Gäster</button>
+      <button class="chip" type="button" data-view="families" aria-pressed="false">Familjer</button>
+      <button class="chip" type="button" data-view="toppings" aria-pressed="false">Toppings</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="dinnersView">
+    <div class="grid" id="grid"><div class="loading">Hämtar middagar…</div></div>
+  </div>
+  <div id="guestsView" hidden>
+    <div class="guest-adder" style="margin-bottom:14px;flex-wrap:wrap;">
+      <input type="text" id="gNewName" placeholder="Ny gäst, t.ex. Karin" autocomplete="off" style="flex:1 1 140px;">
+      <select id="gNewFamily" style="flex:none;width:auto;">
+        <option value="">Utan familj</option>
+      </select>
+      <button type="button" class="chip small" id="gNewChildToggle" aria-pressed="false" style="flex:none;">Vuxen</button>
+      <button type="button" class="btn primary small" id="gAddBtn" style="flex:none;">Lägg till</button>
+    </div>
+    <div class="chips" id="guestFilterChips" style="margin-bottom:14px;">
+      <button class="chip" type="button" data-guest-filter="all" aria-pressed="true">Alla gäster</button>
+      <button class="chip" type="button" data-guest-filter="child" aria-pressed="false">Bara barn</button>
+    </div>
+    <div class="guest-list" id="guestList"><div class="loading">Hämtar gäster…</div></div>
+  </div>
+  <div id="familiesView" hidden>
+    <div class="topping-adder">
+      <input type="text" id="famNewName" placeholder="Ny familj, t.ex. Familjen Andersson" autocomplete="off">
+      <button type="button" class="btn primary small" id="famAddBtn">Skapa familj</button>
+    </div>
+    <div id="familyList" style="margin-top:20px;"><div class="loading">Hämtar familjer…</div></div>
+  </div>
+  <div id="toppingsView" hidden>
+    <div class="topping-adder">
+      <input type="text" id="tNewName" placeholder="Ny topping, t.ex. Chorizo" autocomplete="off">
+      <input type="text" id="tNewCategory" list="toppingCategoryOptions" placeholder="Kategori (valfritt), t.ex. Kött" autocomplete="off">
+      <datalist id="toppingCategoryOptions"></datalist>
+      <button type="button" class="btn primary small" id="tAddBtn">Lägg till</button>
+    </div>
+    <div id="toppingList" style="margin-top:20px;"><div class="loading">Hämtar toppings…</div></div>
+  </div>
+</main>
+
+<button class="fab" id="newDinnerBtn" type="button">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Ny middag
+</button>
+
+<!-- Detaljvy -->
+<section class="overlay" id="detailOverlay" hidden>
+  <div class="overlay-bar">
+    <button class="icon-btn" id="detailClose" type="button" aria-label="Stäng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="overlay-title">Middag</span>
+    <div style="width:40px;"></div>
+  </div>
+  <div class="detail-wrap">
+    <h1 class="detail-title" id="detailTitle"></h1>
+    <div class="detail-date" id="detailDate"></div>
+    <div class="detail-meta" id="detailMeta"></div>
+    <div class="action-row">
+      <button class="btn ghost small" id="detailEditBtn" type="button">Redigera</button>
+      <button class="btn ghost small" id="detailShoppingBtn" type="button" hidden>Inköpslista</button>
+      <button class="btn danger small" id="detailDeleteBtn" type="button">Ta bort</button>
+    </div>
+
+    <div class="section" id="detailGuestsSection">
+      <h2>Gäster</h2>
+      <div class="guest-chips" id="detailGuests"></div>
+    </div>
+
+    <div class="section" id="detailOvernightSection">
+      <h2>Övernattning</h2>
+      <div class="guest-chips" id="detailOvernightGuests"></div>
+      <div class="notes-box" id="detailOvernightFood" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="section" id="detailDishesSection">
+      <h2>Rätter</h2>
+      <div id="detailDishes"></div>
+    </div>
+
+    <div class="section" id="detailDrinksSection">
+      <h2>Dryck</h2>
+      <ul class="drink-list" id="detailDrinks"></ul>
+    </div>
+
+    <div class="section" id="detailNotesSection">
+      <h2>Anteckningar</h2>
+      <div class="notes-box" id="detailNotes"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Gästhistorik -->
+<section class="overlay" id="guestOverlay" hidden>
+  <div class="overlay-bar">
+    <button class="icon-btn" id="guestClose" type="button" aria-label="Stäng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="overlay-title">Gäst</span>
+    <div style="width:40px;"></div>
+  </div>
+  <div class="detail-wrap">
+    <h1 class="detail-title" id="guestTitle"></h1>
+    <p class="detail-date" id="guestSub"></p>
+    <div class="action-row">
+      <button class="btn ghost small" id="guestEditBtn" type="button">Redigera</button>
+      <button class="btn danger small" id="guestDeleteBtn" type="button">Ta bort</button>
+    </div>
+
+    <div class="section fieldset-callout" id="guestEditSection" hidden style="display:flex;flex-direction:column;gap:14px;">
+      <div class="field">
+        <label for="guestEditName">Namn</label>
+        <input type="text" id="guestEditName">
+      </div>
+      <div class="field">
+        <label>Kategori</label>
+        <button type="button" class="chip small" id="guestEditChildToggle" aria-pressed="false" style="align-self:flex-start;">Vuxen</button>
+      </div>
+      <div class="field">
+        <label for="guestEditFamily">Familj</label>
+        <select id="guestEditFamily">
+          <option value="">Utan familj</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn ghost small" id="guestEditCancel">Avbryt</button>
+        <button type="button" class="btn primary small" id="guestEditSave">Spara</button>
+      </div>
+    </div>
+
+    <div class="grid" id="guestDinnerGrid" style="margin-top:20px;"></div>
+  </div>
+</section>
+
+<!-- Inköpslista -->
+<section class="overlay" id="shoppingOverlay" hidden>
+  <div class="overlay-bar">
+    <button class="icon-btn" id="shoppingClose" type="button" aria-label="Stäng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="overlay-title">Inköpslista</span>
+    <div style="width:40px;"></div>
+  </div>
+  <div class="detail-wrap">
+    <h1 class="detail-title" id="shoppingTitle"></h1>
+    <p class="detail-date" id="shoppingSub"></p>
+    <div id="shoppingBody" style="margin-top:22px;"></div>
+  </div>
+</section>
+
+<!-- Formulär (ny/redigera) -->
+<section class="overlay" id="formOverlay" hidden>
+  <div class="overlay-bar">
+    <button class="icon-btn" id="formClose" type="button" aria-label="Stäng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <span class="overlay-title" id="formOverlayTitle">Ny middag</span>
+    <div style="width:40px;"></div>
+  </div>
+  <form class="form-wrap" id="dinnerForm">
+
+    <fieldset>
+      <legend>Om middagen</legend>
+      <div class="field-row">
+        <div class="field">
+          <label for="fDate">Datum</label>
+          <input type="date" id="fDate" required>
+        </div>
+        <div class="field">
+          <label for="fStatus">Status</label>
+          <select id="fStatus">
+            <option value="planerad">Planerad (kommande)</option>
+            <option value="genomförd">Genomförd</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="fHost">Värd</label>
+        <input type="text" id="fHost" list="hostOptions" placeholder="Vem i familjen höll i kvällen?" autocomplete="off">
+        <datalist id="hostOptions"></datalist>
+      </div>
+      <div class="field">
+        <label for="fTitle">Titel / anledning (valfritt)</label>
+        <input type="text" id="fTitle" placeholder="T.ex. Nyårsmiddag, Grannarna på middag">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Gäster<span class="legend-sub">Skriv ett namn och tryck Enter eller på plustecknet, eller lägg till en hel familj med en knapp nedan.</span></legend>
+      <div class="guest-adder">
+        <input type="text" id="fGuestInput" list="guestOptions" placeholder="Lägg till gäst…" autocomplete="off">
+        <datalist id="guestOptions"></datalist>
+        <button type="button" class="btn ghost small" id="fGuestAdd">Lägg till</button>
+      </div>
+      <div class="chips" id="fFamilyChips" style="margin-top:2px;"></div>
+      <div class="guest-chips" id="fGuestChips"></div>
+    </fieldset>
+
+    <fieldset class="fieldset-callout" id="fOvernightFieldset">
+      <legend>🌙 Övernattning<span class="legend-sub">Kryssa i vilka av gästerna ovan som sover över — främst för barnen.</span></legend>
+      <div class="legend-sub" id="fOvernightHint" hidden>Lägg till gäster ovan för att kunna markera vilka som sover över.</div>
+      <div class="ing-list" id="fOvernightList"></div>
+      <div class="field" id="fOvernightFoodField" hidden style="margin-top:10px;">
+        <label for="fOvernightFood">Vad åt de?</label>
+        <input type="text" id="fOvernightFood" placeholder="T.ex. Pannkakor och smoothie till frukost">
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Rätter<span class="legend-sub">Koppla gärna till ett recept i Mealie, annars räcker fritext.</span></legend>
+      <div id="fDishRows" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <datalist id="mealieOptions"></datalist>
+      <datalist id="toppingOptions"></datalist>
+      <button type="button" class="add-row-btn" id="fDishAdd">+ Lägg till rätt</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Dryck<span class="legend-sub">Druva, producent, årgång eller bara "husets rödvin" — vad ni har.</span></legend>
+      <div id="fDrinkRows" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <button type="button" class="add-row-btn" id="fDrinkAdd">+ Lägg till dryck</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Anteckningar<span class="legend-sub">Fritt fält — stämning, vad som funkade, vad ni skulle ändra.</span></legend>
+      <div class="field">
+        <textarea id="fNotes" rows="4" placeholder="Valfritt…"></textarea>
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="button" class="btn ghost" id="fCancel">Avbryt</button>
+      <button type="submit" class="btn primary" id="fSubmit">Spara middag</button>
+    </div>
+  </form>
+</section>
+
+<script>
+(function(){
+  "use strict";
+
+  var COURSES = ["Förrätt", "Huvudrätt", "Efterrätt", "Tillbehör", "Annat"];
+
+  var App = {
+    dinners: [],
+    guests: [],
+    toppings: [],
+    families: [],
+    view: "all",
+    query: "",
+    guestFilter: "all",
+    config: { mealiePublicUrl: "", mealieGroupSlug: "home" },
+    editingId: null,
+    mealieMatchByName: {},
+  };
+
+  function esc(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function byId(id){ return document.getElementById(id); }
+
+  async function api(path, options){
+    // Relativ sökväg (inget inledande snedstreck) - appen kan ligga på
+    // valfri undersökväg (just nu /bjudning/) och ska ändå anropa sitt
+    // eget API, inte webbplatsens rot.
+    var res = await fetch(path.replace(/^\//, ""), options);
+    if (!res.ok){
+      var msg = "API-fel " + res.status + " för " + path;
+      try{ var body = await res.json(); if (body && body.detail) msg = body.detail; }catch(e){}
+      throw new Error(msg);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  function fmtDate(iso){
+    if (!iso) return "";
+    var d = new Date(iso + "T00:00:00");
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  // ---------- Vy-växling ----------
+
+  function setView(view){
+    App.view = view;
+    Array.prototype.forEach.call(document.querySelectorAll(".chip[data-view]"), function(btn){
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-view") === view ? "true" : "false");
+    });
+    byId("dinnersView").hidden = (view === "guests" || view === "toppings" || view === "families");
+    byId("guestsView").hidden = view !== "guests";
+    byId("familiesView").hidden = view !== "families";
+    byId("toppingsView").hidden = view !== "toppings";
+    if (view === "guests") renderGuestList();
+    else if (view === "families") renderFamilyList();
+    else if (view === "toppings") renderToppingList();
+    else renderDinnerGrid();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".chip[data-view]"), function(btn){
+    btn.addEventListener("click", function(){ setView(btn.getAttribute("data-view")); });
+  });
+
+  byId("searchInput").addEventListener("input", function(e){
+    App.query = e.target.value;
+    if (App.view === "guests") renderGuestList();
+    else if (App.view === "families") renderFamilyList();
+    else if (App.view === "toppings") renderToppingList();
+    else renderDinnerGrid();
+  });
+
+  // ---------- Middagar: lista ----------
+
+  function filteredDinners(){
+    var q = App.query.trim().toLowerCase();
+    var list = App.dinners.slice();
+    if (App.view === "upcoming"){
+      list = list.filter(function(d){ return (d.status || "genomförd") === "planerad"; });
+    } else if (App.view === "history"){
+      list = list.filter(function(d){ return (d.status || "genomförd") === "genomförd"; });
+    } else if (App.view === "overnight"){
+      list = list.filter(function(d){ return d.overnightCount > 0; });
+    }
+    // App.view === "all": ingen statusfiltrering - allt i en gemensam lista.
+    if (q){
+      list = list.filter(function(d){
+        var hay = [d.title, d.host].concat(d.guests || [], d.dishNames || [])
+          .filter(Boolean).join(" ").toLowerCase();
+        return hay.indexOf(q) !== -1;
+      });
+    }
+    list.sort(function(a, b){
+      if (a.date === b.date) return 0;
+      // Kommande: närmast först. Alla/Historik: nyast (inkl. kommande) först.
+      if (App.view === "upcoming") return a.date < b.date ? -1 : 1;
+      return a.date > b.date ? -1 : 1;
+    });
+    return list;
+  }
+
+  function dinnerCardHtml(d){
+    var isUpcoming = d.status === "planerad";
+    var guestsText = (d.guests || []).length
+      ? "Med " + d.guests.join(", ")
+      : "Inga gäster registrerade";
+    var dishesText = (d.dishNames || []).length
+      ? d.dishNames.join(" · ")
+      : "Inga rätter registrerade";
+    return (
+      '<button class="card' + (isUpcoming ? ' upcoming' : '') + '" type="button" data-id="' + d.id + '">' +
+        '<div class="card-date">' + esc(fmtDate(d.date)) + '</div>' +
+        '<div class="card-title">' + esc(d.title || "Middag") + '</div>' +
+        '<div class="card-guests">' + esc(guestsText) + '</div>' +
+        '<div class="card-dishes">' + esc(dishesText) + '</div>' +
+        '<div class="card-meta">' +
+          (isUpcoming ? '<span class="tag upcoming-tag">Kommande</span>' : '') +
+          (d.host ? '<span class="tag host">Värd: ' + esc(d.host) + '</span>' : '') +
+          (d.drinkCount ? '<span class="tag">' + d.drinkCount + (d.drinkCount === 1 ? ' dryck' : ' drycker') + '</span>' : '') +
+          (d.overnightCount ? '<span class="tag overnight-tag">🌙 ' + d.overnightCount + ' sov över</span>' : '') +
+        '</div>' +
+      '</button>'
+    );
+  }
+
+  function renderDinnerGrid(){
+    var grid = byId("grid");
+    var list = filteredDinners();
+    if (list.length === 0){
+      var hasAnyTotal = App.dinners.length > 0;
+      var emptyMsg;
+      if (App.query.trim()){
+        emptyMsg = "Inget matchar sökningen.";
+      } else if (App.view === "upcoming"){
+        emptyMsg = "Inga kommande middagar planerade. Tryck på “Ny middag” för att lägga till en - sätt status till “Planerad” så hamnar den här.";
+      } else if (App.view === "history"){
+        emptyMsg = "Inga genomförda middagar registrerade än.";
+      } else if (App.view === "overnight"){
+        emptyMsg = hasAnyTotal
+          ? "Inga middagar med övernattning registrerade än. Kryssa i vilka som sov över under “Övernattning” i formuläret när du lägger till eller redigerar en middag."
+          : "Inga middagar registrerade än.";
+      } else {
+        emptyMsg = hasAnyTotal ? "Inget matchar sökningen." :
+          "Inga middagar registrerade än. Tryck på “Ny middag” för att lägga till den första.";
+      }
+      grid.innerHTML = '<div class="empty">' + emptyMsg + '</div>';
+      return;
+    }
+    grid.innerHTML = list.map(dinnerCardHtml).join("");
+    Array.prototype.forEach.call(grid.querySelectorAll(".card"), function(card){
+      card.addEventListener("click", function(){ openDetail(parseInt(card.getAttribute("data-id"), 10)); });
+    });
+  }
+
+  // ---------- Gäster: lista ----------
+
+  function filteredGuests(){
+    var q = App.query.trim().toLowerCase();
+    var list = App.guests;
+    if (App.guestFilter === "child") list = list.filter(function(g){ return g.isChild; });
+    if (q) list = list.filter(function(g){ return g.name.toLowerCase().indexOf(q) !== -1; });
+    return list;
+  }
+
+  Array.prototype.forEach.call(byId("guestFilterChips").querySelectorAll("[data-guest-filter]"), function(btn){
+    btn.addEventListener("click", function(){
+      App.guestFilter = btn.getAttribute("data-guest-filter");
+      Array.prototype.forEach.call(byId("guestFilterChips").querySelectorAll("[data-guest-filter]"), function(b){
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+      renderGuestList();
+    });
+  });
+
+  function guestRowHtml(g){
+    var meta = g.count ? ("Senast " + esc(fmtDate(g.lastDate))) : "Inte kopplad till någon middag";
+    var tag = g.count ? (g.count + (g.count === 1 ? ' gång' : ' gånger')) : 'Oanvänd';
+    var canDelete = !g.count;
+    return (
+      '<div class="guest-row" data-id="' + g.id + '" data-name="' + esc(g.name) + '">' +
+        '<div><div class="guest-row-name">' + esc(g.name) + '</div>' +
+        '<div class="guest-row-meta">' + meta + '</div></div>' +
+        '<span class="tag">' + tag + '</span>' +
+        '<button type="button" class="chip small guest-child-toggle" aria-pressed="' + (g.isChild ? "true" : "false") + '" title="' +
+          (g.isChild ? "Klicka för att markera som vuxen" : "Klicka för att markera som barn") + '">' +
+          (g.isChild ? "Barn" : "Vuxen") +
+        '</button>' +
+        '<button type="button" class="icon-btn guest-edit" aria-label="Redigera namn">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>' +
+        '</button>' +
+        '<button type="button" class="icon-btn guest-delete"' +
+          (canDelete ? '' : ' disabled title="Kopplad till minst en middag - ta bort gästen därifrån först"') +
+          ' aria-label="Ta bort gäst">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>' +
+        '</button>' +
+      '</div>'
+    );
+  }
+
+  function renderGuestList(){
+    var wrap = byId("guestList");
+    var list = filteredGuests();
+    if (list.length === 0){
+      var emptyMsg = "Inga gäster registrerade än.";
+      if (App.guests.length){
+        emptyMsg = App.guestFilter === "child" ? "Ingen gäst är markerad som barn." : "Ingen gäst matchar sökningen.";
+      }
+      wrap.innerHTML = '<div class="empty">' + emptyMsg + '</div>';
+      return;
+    }
+    // Grupperat efter familj - samma monster som toppings grupperas efter
+    // kategori ("Battre overblick i gastlistan"), med gaster utan familj
+    // sist, precis som "Ovrigt" hos toppings.
+    var byFamily = {};
+    var order = [];
+    list.forEach(function(g){
+      var fam = g.familyName || "Utan familj";
+      if (!byFamily[fam]){ byFamily[fam] = []; order.push(fam); }
+      byFamily[fam].push(g);
+    });
+    order.sort(function(a, b){
+      if (a === "Utan familj") return 1;
+      if (b === "Utan familj") return -1;
+      return a.localeCompare(b, "sv");
+    });
+    wrap.innerHTML = order.map(function(fam){
+      var rows = byFamily[fam].map(guestRowHtml).join("");
+      return '<div class="topping-category"><h3>' + esc(fam) + '</h3>' + rows + '</div>';
+    }).join("");
+    Array.prototype.forEach.call(wrap.querySelectorAll(".guest-row"), function(row){
+      row.addEventListener("click", function(){ openGuest(row.getAttribute("data-name"), row.getAttribute("data-id")); });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll(".guest-edit"), function(btn){
+      btn.addEventListener("click", async function(e){
+        e.stopPropagation();
+        var row = btn.closest(".guest-row");
+        var id = row.getAttribute("data-id");
+        var oldName = row.getAttribute("data-name");
+        var newName = window.prompt("Nytt namn för \"" + oldName + "\":", oldName);
+        if (newName === null) return;
+        newName = newName.trim();
+        if (!newName || newName === oldName) return;
+        try{
+          await api("/api/guests/" + id, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName }),
+          });
+          await loadAll();
+          renderCurrentView();
+        }catch(err){
+          alert("Kunde inte byta namn: " + err.message);
+        }
+      });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll(".guest-child-toggle"), function(btn){
+      btn.addEventListener("click", async function(e){
+        e.stopPropagation();
+        var row = btn.closest(".guest-row");
+        var id = row.getAttribute("data-id");
+        var next = btn.getAttribute("aria-pressed") !== "true";
+        btn.disabled = true;
+        try{
+          await api("/api/guests/" + id, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ isChild: next }),
+          });
+          await loadAll();
+          renderCurrentView();
+        }catch(err){
+          alert("Kunde inte ändra barn-markering: " + err.message);
+        }finally{
+          btn.disabled = false;
+        }
+      });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll(".guest-delete:not(:disabled)"), function(btn){
+      btn.addEventListener("click", async function(e){
+        e.stopPropagation();
+        var row = btn.closest(".guest-row");
+        var id = row.getAttribute("data-id");
+        var name = row.getAttribute("data-name");
+        if (!window.confirm('Ta bort "' + name + '" ur gästlistan? Det går inte att ångra.')) return;
+        try{
+          await api("/api/guests/" + id, { method: "DELETE" });
+          await loadAll();
+          renderCurrentView();
+        }catch(err){
+          alert("Kunde inte ta bort: " + err.message);
+        }
+      });
+    });
+  }
+
+  // Lägg till en gäst direkt i gästlistan, utan att gästen behöver vara
+  // kopplad till en middag - t.ex. inför att lägga till hela familjer i
+  // förväg. Samma get-or-create-endpoint som familjekortens medlemsfält.
+  byId("gNewChildToggle").addEventListener("click", function(){
+    var pressed = this.getAttribute("aria-pressed") === "true";
+    this.setAttribute("aria-pressed", pressed ? "false" : "true");
+    this.textContent = pressed ? "Vuxen" : "Barn";
+  });
+  byId("gAddBtn").addEventListener("click", async function(){
+    var nameInput = byId("gNewName");
+    var name = nameInput.value.trim();
+    if (!name){ nameInput.focus(); return; }
+    var famVal = byId("gNewFamily").value;
+    var familyId = famVal === "" ? null : parseInt(famVal, 10);
+    var isChild = byId("gNewChildToggle").getAttribute("aria-pressed") === "true";
+    var btn = this;
+    btn.disabled = true;
+    try{
+      await api("/api/guests", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name, familyId: familyId, isChild: isChild }),
+      });
+      nameInput.value = "";
+      byId("gNewFamily").value = "";
+      byId("gNewChildToggle").setAttribute("aria-pressed", "false");
+      byId("gNewChildToggle").textContent = "Vuxen";
+      await loadAll();
+      renderCurrentView();
+      nameInput.focus();
+    }catch(e){
+      alert("Kunde inte lägga till: " + e.message);
+    }finally{
+      btn.disabled = false;
+    }
+  });
+  byId("gNewName").addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); byId("gAddBtn").click(); }
+  });
+
+  // Gastens data (id/isChild/count) sa Redigera/Ta bort i detaljvyn har
+  // nagot att jobba mot - hittas i App.guests som redan ar laddad, med
+  // ett fallback om gasten av nagon anledning inte finns dar an.
+  var currentGuest = null;
+
+  function updateGuestDeleteButton(){
+    var btn = byId("guestDeleteBtn");
+    var canDelete = !!currentGuest && !currentGuest.count;
+    btn.disabled = !canDelete;
+    btn.title = canDelete ? "" : "Kopplad till minst en middag - ta bort gästen därifrån först";
+  }
+
+  async function openGuest(name, id){
+    var guest = App.guests.find(function(g){ return String(g.id) === String(id); }) ||
+      App.guests.find(function(g){ return g.name.toLowerCase() === name.toLowerCase(); }) ||
+      { id: id, name: name, isChild: false, familyId: null, count: 0 };
+    currentGuest = guest;
+    byId("guestEditSection").hidden = true;
+    updateGuestDeleteButton();
+    byId("guestOverlay").hidden = false;
+    byId("guestTitle").textContent = guest.name;
+    byId("guestSub").textContent = "Hämtar historik…";
+    byId("guestDinnerGrid").innerHTML = "";
+    try{
+      var dinners = await api("/api/guests/" + encodeURIComponent(guest.name) + "/dinners");
+      byId("guestSub").textContent = dinners.length
+        ? "Bjuden " + dinners.length + (dinners.length === 1 ? " gång" : " gånger") + " tidigare"
+        : "Ingen historik hittades.";
+      byId("guestDinnerGrid").innerHTML = dinners.map(dinnerCardHtml).join("");
+      Array.prototype.forEach.call(byId("guestDinnerGrid").querySelectorAll(".card"), function(card){
+        card.addEventListener("click", function(){ openDetail(parseInt(card.getAttribute("data-id"), 10)); });
+      });
+    }catch(e){
+      byId("guestSub").textContent = "Kunde inte hämta historik.";
+    }
+  }
+  byId("guestClose").addEventListener("click", function(){ byId("guestOverlay").hidden = true; currentGuest = null; });
+
+  // Redigera-knappen i gastens detaljvy - namn och Barn/Vuxen i ett och
+  // samma sparande, istallet for pennan + den separata Barn-knappen i
+  // listan var for sig.
+  byId("guestEditBtn").addEventListener("click", function(){
+    if (!currentGuest) return;
+    byId("guestEditName").value = currentGuest.name;
+    var toggle = byId("guestEditChildToggle");
+    toggle.setAttribute("aria-pressed", currentGuest.isChild ? "true" : "false");
+    toggle.textContent = currentGuest.isChild ? "Barn" : "Vuxen";
+    var famSelect = byId("guestEditFamily");
+    famSelect.innerHTML = '<option value="">Utan familj</option>' +
+      (App.families || []).map(function(f){
+        return '<option value="' + f.id + '">' + esc(f.name) + '</option>';
+      }).join("");
+    famSelect.value = currentGuest.familyId != null ? String(currentGuest.familyId) : "";
+    byId("guestEditSection").hidden = false;
+    byId("guestEditName").focus();
+  });
+  byId("guestEditCancel").addEventListener("click", function(){
+    byId("guestEditSection").hidden = true;
+  });
+  byId("guestEditChildToggle").addEventListener("click", function(){
+    var pressed = this.getAttribute("aria-pressed") === "true";
+    this.setAttribute("aria-pressed", pressed ? "false" : "true");
+    this.textContent = pressed ? "Vuxen" : "Barn";
+  });
+  byId("guestEditSave").addEventListener("click", async function(){
+    if (!currentGuest) return;
+    var newName = byId("guestEditName").value.trim();
+    if (!newName){ alert("Namn saknas"); return; }
+    var isChild = byId("guestEditChildToggle").getAttribute("aria-pressed") === "true";
+    var famVal = byId("guestEditFamily").value;
+    var familyId = famVal === "" ? null : parseInt(famVal, 10);
+    var btn = this;
+    btn.disabled = true;
+    try{
+      await api("/api/guests/" + currentGuest.id, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName, isChild: isChild, familyId: familyId }),
+      });
+      await loadAll();
+      renderCurrentView();
+      byId("guestEditSection").hidden = true;
+      // Gastens namn kan ha andrats - oppna om detaljvyn sa allt (titel,
+      // historik-anropet som gar pa namn) stammer med det nya namnet.
+      openGuest(newName, currentGuest.id);
+    }catch(err){
+      alert("Kunde inte spara: " + err.message);
+    }finally{
+      btn.disabled = false;
+    }
+  });
+  byId("guestDeleteBtn").addEventListener("click", async function(){
+    if (!currentGuest || this.disabled) return;
+    if (!window.confirm('Ta bort "' + currentGuest.name + '" ur gästlistan? Det går inte att ångra.')) return;
+    try{
+      await api("/api/guests/" + currentGuest.id, { method: "DELETE" });
+      byId("guestOverlay").hidden = true;
+      currentGuest = null;
+      await loadAll();
+      renderCurrentView();
+    }catch(err){
+      alert("Kunde inte ta bort: " + err.message);
+    }
+  });
+
+  // ---------- Familjer ----------
+
+  // Lagg till en medlem i en familj - om namnet redan finns som gast
+  // kopplas den befintliga gasten dit, annars skapas en ny gast direkt
+  // med familjen ifylld (samma "hamta-eller-skapa"-tanke som toppings).
+  async function addFamilyMember(familyId, name){
+    name = name.trim();
+    if (!name) return;
+    var existing = App.guests.find(function(g){ return g.name.toLowerCase() === name.toLowerCase(); });
+    if (existing){
+      await api("/api/guests/" + existing.id, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ familyId: familyId }),
+      });
+    } else {
+      await api("/api/guests", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name, familyId: familyId }),
+      });
+    }
+  }
+
+  function familyCardHtml(f){
+    var members = (f.members || []).map(function(m){
+      return '<span class="guest-chip">' + esc(m.name) +
+        '<button type="button" class="family-member-remove" data-guest-id="' + m.id + '" aria-label="Ta bort ' + esc(m.name) + ' från familjen">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+        '</button></span>';
+    }).join("");
+    return (
+      '<div class="family-card" data-id="' + f.id + '">' +
+        '<div class="family-card-head">' +
+          '<h3>' + esc(f.name) + '</h3>' +
+          '<div class="family-card-actions">' +
+            '<button type="button" class="icon-btn family-rename" aria-label="Byt namn på ' + esc(f.name) + '">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>' +
+            '</button>' +
+            '<button type="button" class="icon-btn family-delete" aria-label="Ta bort ' + esc(f.name) + '">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        (members ? '<div class="family-members">' + members + '</div>' :
+          '<div class="family-empty-hint">Inga medlemmar än - lägg till någon nedan.</div>') +
+        '<div class="guest-adder">' +
+          '<input type="text" class="family-member-input" list="guestOptions" placeholder="Lägg till medlem…" autocomplete="off">' +
+          '<button type="button" class="btn ghost small family-member-add">Lägg till</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function filteredFamilies(){
+    var q = App.query.trim().toLowerCase();
+    var list = App.families.slice();
+    if (q){
+      list = list.filter(function(f){
+        return f.name.toLowerCase().indexOf(q) !== -1 ||
+          (f.members || []).some(function(m){ return m.name.toLowerCase().indexOf(q) !== -1; });
+      });
+    }
+    list.sort(function(a, b){ return a.name.localeCompare(b.name, "sv"); });
+    return list;
+  }
+
+  function renderFamilyList(){
+    var wrap = byId("familyList");
+    var list = filteredFamilies();
+    if (list.length === 0){
+      wrap.innerHTML = '<div class="empty">' +
+        (App.families.length ? "Ingen familj matchar sökningen." :
+          "Inga familjer skapade än. Skapa den första ovan, t.ex. “Familjen Andersson”.") +
+        '</div>';
+      return;
+    }
+    wrap.innerHTML = list.map(familyCardHtml).join("");
+
+    Array.prototype.forEach.call(wrap.querySelectorAll(".family-rename"), function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.closest(".family-card").getAttribute("data-id");
+        var fam = App.families.find(function(f){ return String(f.id) === id; });
+        if (!fam) return;
+        var newName = window.prompt("Nytt namn för familjen:", fam.name);
+        if (newName === null) return;
+        newName = newName.trim();
+        if (!newName || newName === fam.name) return;
+        try{
+          await api("/api/families/" + id, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName }),
+          });
+          await loadAll();
+          renderCurrentView();
+        }catch(err){
+          alert("Kunde inte byta namn: " + err.message);
+        }
+      });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll(".family-delete"), function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.closest(".family-card").getAttribute("data-id");
+        var fam = App.families.find(function(f){ return String(f.id) === id; });
+        var name = fam ? fam.name : "familjen";
+        var note = (fam && fam.members.length) ? " Medlemmarna finns kvar som vanliga gäster, bara utan familj." : "";
+        if (!window.confirm('Ta bort "' + name + '"?' + note)) return;
+        try{
+          await api("/api/families/" + id, { method: "DELETE" });
+          await loadAll();
+          renderCurrentView();
+        }catch(err){
+          alert("Kunde inte ta bort: " + err.message);
+        }
+      });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll(".family-member-remove"), function(btn){
+      btn.addEventListener("click", async function(){
+        var guestId = btn.getAttribute("data-guest-id");
+        try{
+          await api("/api/guests/" + guestId, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ familyId: null }),
+          });
+          await loadAll();
+          renderCurrentView();
+        }catch(err){
+          alert("Kunde inte ta bort ur familjen: " + err.message);
+        }
+      });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll(".family-card"), function(card){
+      var id = card.getAttribute("data-id");
+      var input = card.querySelector(".family-member-input");
+      var addBtn = card.querySelector(".family-member-add");
+      function doAdd(){
+        var name = input.value;
+        addBtn.disabled = true;
+        addFamilyMember(id, name).then(function(){
+          return loadAll();
+        }).then(function(){
+          renderCurrentView();
+        }).catch(function(err){
+          alert("Kunde inte lägga till: " + err.message);
+          addBtn.disabled = false;
+        });
+      }
+      addBtn.addEventListener("click", doAdd);
+      input.addEventListener("keydown", function(e){
+        if (e.key === "Enter"){ e.preventDefault(); doAdd(); }
+      });
+    });
+  }
+
+  byId("famAddBtn").addEventListener("click", async function(){
+    var input = byId("famNewName");
+    var name = input.value.trim();
+    if (!name){ input.focus(); return; }
+    try{
+      await api("/api/families", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name }),
+      });
+      input.value = "";
+      await loadAll();
+      renderCurrentView();
+      input.focus();
+    }catch(e){
+      alert("Kunde inte skapa familj: " + e.message);
+    }
+  });
+  byId("famNewName").addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); byId("famAddBtn").click(); }
+  });
+
+  // ---------- Toppings (t.ex. pizza) ----------
+
+  function filteredToppings(){
+    var q = App.query.trim().toLowerCase();
+    if (!q) return App.toppings;
+    return App.toppings.filter(function(t){
+      return t.name.toLowerCase().indexOf(q) !== -1 ||
+        (t.category || "").toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function renderToppingList(){
+    var wrap = byId("toppingList");
+    var list = filteredToppings();
+    if (list.length === 0){
+      wrap.innerHTML = '<div class="empty">' +
+        (App.toppings.length ? "Ingen topping matchar sökningen." :
+          "Inga toppings i biblioteket än. Lägg till dina första ovan - de går sedan att välja på varje rätt.") +
+        '</div>';
+      return;
+    }
+    var byCategory = {};
+    var order = [];
+    list.forEach(function(t){
+      var c = t.category || "Övrigt";
+      if (!byCategory[c]){ byCategory[c] = []; order.push(c); }
+      byCategory[c].push(t);
+    });
+    order.sort(function(a, b){
+      if (a === "Övrigt") return 1;
+      if (b === "Övrigt") return -1;
+      return a.localeCompare(b, "sv");
+    });
+    wrap.innerHTML = order.map(function(c){
+      var rows = byCategory[c].map(function(t){
+        var canDelete = !t.uses;
+        return (
+          '<div class="topping-row">' +
+            '<div><div class="topping-row-name">' + esc(t.name) + '</div>' +
+            (t.uses ? '<div class="topping-row-meta">Används i ' + t.uses + (t.uses === 1 ? ' rätt' : ' rätter') + '</div>' : '') +
+            '</div>' +
+            '<button type="button" class="icon-btn topping-delete" data-id="' + t.id + '" data-name="' + esc(t.name) + '"' +
+              (canDelete ? '' : ' disabled title="Används i minst en rätt - gå till den middagen för att ta bort den där först"') + ' aria-label="Ta bort ' + esc(t.name) + '">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>' +
+            '</button>' +
+          '</div>'
+        );
+      }).join("");
+      return '<div class="topping-category"><h3>' + esc(c) + '</h3>' + rows + '</div>';
+    }).join("");
+    Array.prototype.forEach.call(wrap.querySelectorAll(".topping-delete:not(:disabled)"), function(btn){
+      btn.addEventListener("click", async function(){
+        if (!window.confirm('Ta bort "' + btn.getAttribute("data-name") + '" från topping-biblioteket?')) return;
+        try{
+          await api("/api/toppings/" + btn.getAttribute("data-id"), { method: "DELETE" });
+          App.toppings = await api("/api/toppings");
+          byId("toppingOptions").innerHTML = App.toppings.map(function(t){ return '<option value="' + esc(t.name) + '">'; }).join("");
+          renderToppingList();
+        }catch(e){
+          alert("Kunde inte ta bort: " + e.message);
+        }
+      });
+    });
+  }
+
+  byId("tAddBtn").addEventListener("click", async function(){
+    var nameInput = byId("tNewName");
+    var catInput = byId("tNewCategory");
+    var name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    try{
+      await api("/api/toppings", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name, category: catInput.value.trim() || null }),
+      });
+      nameInput.value = "";
+      catInput.value = "";
+      App.toppings = await api("/api/toppings");
+      byId("toppingOptions").innerHTML = App.toppings.map(function(t){ return '<option value="' + esc(t.name) + '">'; }).join("");
+      var categories = [];
+      App.toppings.forEach(function(t){ if (t.category && categories.indexOf(t.category) === -1) categories.push(t.category); });
+      byId("toppingCategoryOptions").innerHTML = categories.map(function(c){ return '<option value="' + esc(c) + '">'; }).join("");
+      renderToppingList();
+      nameInput.focus();
+    }catch(e){
+      alert("Kunde inte lägga till: " + e.message);
+    }
+  });
+  byId("tNewName").addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); byId("tAddBtn").click(); }
+  });
+
+  // ---------- Inköpslista ----------
+
+  async function openShoppingList(dinner){
+    byId("shoppingOverlay").hidden = false;
+    byId("shoppingTitle").textContent = dinner.title || "Middag";
+    byId("shoppingSub").textContent = fmtDate(dinner.date);
+    byId("shoppingBody").innerHTML = '<div class="loading">Hämtar ingredienser…</div>';
+    window.scrollTo(0,0);
+    try{
+      var data = await api("/api/dinners/" + dinner.id + "/shopping-list");
+      renderShoppingList(data);
+    }catch(e){
+      byId("shoppingBody").innerHTML = '<div class="empty">Kunde inte hämta ingredienser.</div>';
+    }
+  }
+
+  function renderShoppingList(data){
+    var groups = data.groups || [];
+    if (!groups.length){
+      byId("shoppingBody").innerHTML = '<div class="empty">Inga rätter registrerade för den här middagen än.</div>';
+      return;
+    }
+    byId("shoppingBody").innerHTML = groups.map(function(g, gi){
+      var body;
+      if (g.linked && g.ingredients.length){
+        body = '<div class="ing-list">' + g.ingredients.map(function(ing, ii){
+          return '<button type="button" class="ing-check" data-gi="' + gi + '" data-ii="' + ii + '">' +
+            '<span class="box"></span><span>' + esc(ing) + '</span></button>';
+        }).join("") + '</div>';
+      } else if (g.linked){
+        body = '<p class="drink-sub">Receptet har inga ingredienser angivna i Mealie.</p>';
+      } else {
+        body = '<p class="drink-sub">Inte kopplad till ett Mealie-recept — lägg till ingredienserna själv.</p>';
+      }
+      return '<div class="course-group"><h3>' + esc(g.dishName) + '</h3>' + body + '</div>';
+    }).join("");
+    Array.prototype.forEach.call(byId("shoppingBody").querySelectorAll(".ing-check"), function(btn){
+      btn.addEventListener("click", function(){ btn.classList.toggle("done"); });
+    });
+  }
+
+  byId("shoppingClose").addEventListener("click", function(){ byId("shoppingOverlay").hidden = true; });
+
+  // ---------- Detaljvy ----------
+
+  var currentDetail = null;
+
+  async function openDetail(id){
+    byId("detailOverlay").hidden = false;
+    byId("detailTitle").textContent = "Laddar …";
+    window.scrollTo(0,0);
+    try{
+      var d = await api("/api/dinners/" + id);
+      currentDetail = d;
+      renderDetail(d);
+    }catch(e){
+      byId("detailTitle").textContent = "Kunde inte hämta middagen";
+    }
+  }
+
+  function renderDetail(d){
+    byId("detailTitle").textContent = d.title || "Middag";
+    byId("detailDate").textContent = fmtDate(d.date);
+    byId("detailMeta").innerHTML =
+      (d.status === "planerad" ? '<span class="tag upcoming-tag">Kommande</span>' : '') +
+      (d.host ? '<span class="tag host">Värd: ' + esc(d.host) + '</span>' : "");
+    byId("detailShoppingBtn").hidden = !(d.dishes && d.dishes.length);
+
+    byId("detailGuestsSection").hidden = !(d.guests && d.guests.length);
+    byId("detailGuests").innerHTML = (d.guests || []).map(function(g){
+      return '<span class="tag">' + esc(g) + '</span>' +
+        (isChildName(g) ? '<span class="tag child-tag">Barn</span>' : '');
+    }).join("");
+
+    var overnightGuests = d.overnightGuests || [];
+    byId("detailOvernightSection").hidden = overnightGuests.length === 0;
+    byId("detailOvernightGuests").innerHTML = overnightGuests.map(function(g){
+      return '<span class="tag overnight-tag">🌙 ' + esc(g) + '</span>';
+    }).join("");
+    var overnightFoodBox = byId("detailOvernightFood");
+    if (d.overnightFood){
+      overnightFoodBox.hidden = false;
+      overnightFoodBox.textContent = "Åt: " + d.overnightFood;
+    } else {
+      overnightFoodBox.hidden = true;
+      overnightFoodBox.textContent = "";
+    }
+
+    byId("detailDishesSection").hidden = !(d.dishes && d.dishes.length);
+    var byCourse = {};
+    (d.dishes || []).forEach(function(dish){
+      var c = dish.course || "Annat";
+      if (!byCourse[c]) byCourse[c] = [];
+      byCourse[c].push(dish);
+    });
+    // Fast ordning (förrätt -> huvudrätt -> efterrätt -> ...) oavsett i
+    // vilken ordning rätterna lades till i formuläret.
+    var order = COURSES.filter(function(c){ return byCourse[c]; });
+    Object.keys(byCourse).forEach(function(c){
+      if (order.indexOf(c) === -1) order.push(c);
+    });
+    byId("detailDishes").innerHTML = order.map(function(c){
+      var items = byCourse[c].map(function(dish){
+        var link = dish.mealieSlug
+          ? ' — <a href="' + esc(App.config.mealiePublicUrl) + '/g/' + esc(App.config.mealieGroupSlug) + '/r/' + esc(dish.mealieSlug) + '" target="_blank" rel="noopener">Öppna i Mealie ↗</a>'
+          : '';
+        var toppingsHtml = "";
+        if (dish.toppings && dish.toppings.length){
+          // Bockningsbar checklista - fungerar som en liten notis att ha
+          // uppe medan man faktiskt gör pizzan/rätten.
+          toppingsHtml = '<div class="ing-list" style="margin-top:10px;">' + dish.toppings.map(function(t){
+            return '<button type="button" class="ing-check">' +
+              '<span class="box"></span><span>' + esc(t) + '</span></button>';
+          }).join("") + '</div>';
+        }
+        return '<li>' + esc(dish.name) + link + toppingsHtml + '</li>';
+      }).join("");
+      return '<div class="course-group"><h3>' + esc(c) + '</h3><ul class="dish-list">' + items + '</ul></div>';
+    }).join("");
+    Array.prototype.forEach.call(byId("detailDishes").querySelectorAll(".ing-check"), function(btn){
+      btn.addEventListener("click", function(){ btn.classList.toggle("done"); });
+    });
+
+    byId("detailDrinksSection").hidden = !(d.drinks && d.drinks.length);
+    byId("detailDrinks").innerHTML = (d.drinks || []).map(function(dr){
+      var sub = [dr.producer, dr.vintage, dr.price].filter(Boolean).join(" · ");
+      var link = dr.link ? ' · <a href="' + esc(dr.link) + '" target="_blank" rel="noopener">Länk ↗</a>' : '';
+      var note = dr.note ? '<div class="drink-sub">' + esc(dr.note) + '</div>' : '';
+      return '<li class="drink-item"><span class="drink-name">' + esc(dr.name) + '</span>' +
+        (sub || link ? '<span class="drink-sub">' + esc(sub) + link + '</span>' : '') + note + '</li>';
+    }).join("");
+
+    byId("detailNotesSection").hidden = !d.notes;
+    byId("detailNotes").textContent = d.notes || "";
+  }
+
+  byId("detailClose").addEventListener("click", function(){ byId("detailOverlay").hidden = true; currentDetail = null; });
+  byId("detailEditBtn").addEventListener("click", function(){
+    if (currentDetail) openForm(currentDetail);
+  });
+  byId("detailShoppingBtn").addEventListener("click", function(){
+    if (currentDetail) openShoppingList(currentDetail);
+  });
+  byId("detailDeleteBtn").addEventListener("click", async function(){
+    if (!currentDetail) return;
+    if (!window.confirm('Ta bort "' + (currentDetail.title || "Middag") + '" (' + fmtDate(currentDetail.date) + ')? Det går inte att ångra.')) return;
+    try{
+      await api("/api/dinners/" + currentDetail.id, { method: "DELETE" });
+      byId("detailOverlay").hidden = true;
+      currentDetail = null;
+      await loadAll();
+      renderCurrentView();
+    }catch(e){
+      alert("Kunde inte ta bort middagen: " + e.message);
+    }
+  });
+
+  // ---------- Formulär ----------
+
+  var fGuests = [];
+  var fOvernight = {};
+  var fDishRowCount = 0;
+  var fDrinkRowCount = 0;
+  var mealieDebounce = null;
+
+  function resetForm(){
+    App.editingId = null;
+    byId("dinnerForm").reset();
+    fGuests = [];
+    fOvernight = {};
+    renderGuestChips();
+    byId("fDishRows").innerHTML = "";
+    byId("fDrinkRows").innerHTML = "";
+    fDishRowCount = 0;
+    fDrinkRowCount = 0;
+    addDishRow();
+    addDrinkRow();
+  }
+
+  function openForm(existing){
+    resetForm();
+    if (existing){
+      App.editingId = existing.id;
+      byId("formOverlayTitle").textContent = "Redigera middag";
+      byId("fSubmit").textContent = "Spara ändringar";
+      byId("fDate").value = existing.date;
+      byId("fStatus").value = existing.status || "genomförd";
+      byId("fTitle").value = existing.title || "";
+      byId("fHost").value = existing.host || "";
+      byId("fNotes").value = existing.notes || "";
+      fGuests = (existing.guests || []).slice();
+      fOvernight = {};
+      (existing.overnightGuests || []).forEach(function(name){ fOvernight[name.toLowerCase()] = true; });
+      byId("fOvernightFood").value = existing.overnightFood || "";
+      renderGuestChips();
+      byId("fDishRows").innerHTML = "";
+      fDishRowCount = 0;
+      if (existing.dishes && existing.dishes.length){
+        existing.dishes.forEach(function(dish){ addDishRow(dish); });
+      } else {
+        addDishRow();
+      }
+      byId("fDrinkRows").innerHTML = "";
+      fDrinkRowCount = 0;
+      if (existing.drinks && existing.drinks.length){
+        existing.drinks.forEach(function(dr){ addDrinkRow(dr); });
+      } else {
+        addDrinkRow();
+      }
+    } else {
+      byId("formOverlayTitle").textContent = "Ny middag";
+      byId("fSubmit").textContent = "Spara middag";
+      byId("fDate").value = new Date().toISOString().slice(0,10);
+      byId("fStatus").value = App.view === "upcoming" ? "planerad" : "genomförd";
+    }
+    byId("formOverlay").hidden = false;
+    window.scrollTo(0,0);
+  }
+
+  function closeForm(){ byId("formOverlay").hidden = true; }
+  byId("formClose").addEventListener("click", closeForm);
+  byId("fCancel").addEventListener("click", closeForm);
+  byId("newDinnerBtn").addEventListener("click", function(){ openForm(null); });
+
+  // Snabbknappar for att lagga till en hel familj pa en gang i middagens
+  // gastlista ("Snabbare att lagga till gaster") - bara familjer som
+  // faktiskt har nagra medlemmar visas.
+  function renderFamilyChips(){
+    var wrap = byId("fFamilyChips");
+    if (!wrap) return;
+    var families = (App.families || []).filter(function(f){ return f.members && f.members.length; });
+    if (!families.length){ wrap.innerHTML = ""; return; }
+    wrap.innerHTML = families.map(function(f){
+      return '<button type="button" class="chip small family-quick-add" data-id="' + f.id + '">+ ' +
+        esc(f.name) + ' (' + f.members.length + ')</button>';
+    }).join("");
+    Array.prototype.forEach.call(wrap.querySelectorAll(".family-quick-add"), function(btn){
+      btn.addEventListener("click", function(){
+        var fam = families.find(function(f){ return String(f.id) === btn.getAttribute("data-id"); });
+        if (!fam) return;
+        fam.members.forEach(function(m){
+          var exists = fGuests.some(function(g){ return g.toLowerCase() === m.name.toLowerCase(); });
+          if (!exists) fGuests.push(m.name);
+        });
+        renderGuestChips();
+      });
+    });
+  }
+
+  // Gäster i formuläret
+  function renderGuestChips(){
+    byId("fGuestChips").innerHTML = fGuests.map(function(name, idx){
+      return '<span class="guest-chip">' + esc(name) +
+        '<button type="button" data-idx="' + idx + '" aria-label="Ta bort ' + esc(name) + '">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+        '</button></span>';
+    }).join("");
+    Array.prototype.forEach.call(byId("fGuestChips").querySelectorAll("button"), function(btn){
+      btn.addEventListener("click", function(){
+        fGuests.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
+        renderGuestChips();
+      });
+    });
+    renderOvernightSection();
+  }
+
+  // Övernattning i formuläret - vilka av middagens gäster som sov över,
+  // med barn-markerade gäster överst eftersom det oftast bara är de som
+  // ska kryssas i.
+  function isChildName(name){
+    var g = App.guests.find(function(gu){ return gu.name.toLowerCase() === name.toLowerCase(); });
+    return !!(g && g.isChild);
+  }
+  function renderOvernightSection(){
+    var hint = byId("fOvernightHint");
+    var list = byId("fOvernightList");
+    var foodField = byId("fOvernightFoodField");
+    if (!fGuests.length){
+      hint.hidden = false;
+      list.innerHTML = "";
+      foodField.hidden = true;
+      return;
+    }
+    hint.hidden = true;
+    foodField.hidden = false;
+    var sorted = fGuests.slice().sort(function(a, b){
+      var ca = isChildName(a) ? 0 : 1;
+      var cb = isChildName(b) ? 0 : 1;
+      if (ca !== cb) return ca - cb;
+      return a.localeCompare(b, "sv");
+    });
+    list.innerHTML = sorted.map(function(name){
+      var checked = !!fOvernight[name.toLowerCase()];
+      var child = isChildName(name);
+      return '<button type="button" class="ing-check overnight-check' + (checked ? ' done' : '') + '" data-name="' + esc(name) + '">' +
+        '<span class="box"></span><span>' + esc(name) + (child ? ' <span class="tag child-tag">Barn</span>' : '') + '</span>' +
+      '</button>';
+    }).join("");
+    Array.prototype.forEach.call(list.querySelectorAll(".overnight-check"), function(btn){
+      btn.addEventListener("click", function(){
+        var name = btn.getAttribute("data-name");
+        var key = name.toLowerCase();
+        if (fOvernight[key]) delete fOvernight[key]; else fOvernight[key] = true;
+        btn.classList.toggle("done");
+      });
+    });
+  }
+  function addGuestFromInput(){
+    var input = byId("fGuestInput");
+    var name = input.value.trim();
+    if (!name) return;
+    var exists = fGuests.some(function(g){ return g.toLowerCase() === name.toLowerCase(); });
+    if (!exists) fGuests.push(name);
+    input.value = "";
+    renderGuestChips();
+    input.focus();
+  }
+  byId("fGuestAdd").addEventListener("click", addGuestFromInput);
+  byId("fGuestInput").addEventListener("keydown", function(e){
+    if (e.key === "Enter"){ e.preventDefault(); addGuestFromInput(); }
+  });
+
+  // Rätter i formuläret
+  function addDishRow(existing){
+    fDishRowCount++;
+    var id = "dish" + fDishRowCount;
+    var wrap = document.createElement("div");
+    wrap.className = "row-card";
+    wrap.dataset.rowId = id;
+    // Ny rätt utan sparat värde: föreslå nästa i ordningen (förrätt,
+    // huvudrätt, efterrätt, ...) utifrån hur många rader som redan finns,
+    // istället för att alltid föreslå "Huvudrätt".
+    var rowPosition = byId("fDishRows").children.length;
+    var course = (existing && existing.course) ? existing.course : COURSES[Math.min(rowPosition, COURSES.length - 1)];
+    wrap.innerHTML =
+      '<button type="button" class="icon-btn remove-row" aria-label="Ta bort rätt">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>' +
+      '<div class="row-grid">' +
+        '<select class="dish-course">' + COURSES.map(function(c){
+          return '<option' + (c === course ? ' selected' : '') + '>' + esc(c) + '</option>';
+        }).join("") + '</select>' +
+        '<input type="text" class="dish-name" list="mealieOptions" placeholder="Namn på rätten, t.ex. Rotfruktsgratäng" autocomplete="off" value="' + esc(existing ? existing.name : "") + '">' +
+      '</div>' +
+      '<button type="button" class="dish-toppings-toggle"></button>' +
+      '<div class="dish-toppings-box" hidden>' +
+        '<div class="dish-topping-adder">' +
+          '<input type="text" class="dish-topping-input" list="toppingOptions" placeholder="Lägg till topping, t.ex. Skinka" autocomplete="off">' +
+          '<button type="button" class="btn ghost small dish-topping-add">Lägg till</button>' +
+        '</div>' +
+        '<div class="dish-topping-chips"></div>' +
+      '</div>';
+    var nameInput = wrap.querySelector(".dish-name");
+    nameInput.dataset.mealieSlug = existing && existing.mealieSlug ? existing.mealieSlug : "";
+    nameInput.addEventListener("input", function(){
+      nameInput.dataset.mealieSlug = "";
+      var q = nameInput.value.trim();
+      if (mealieDebounce) clearTimeout(mealieDebounce);
+      if (q.length < 2) return;
+      mealieDebounce = setTimeout(function(){ searchMealie(q); }, 300);
+    });
+    nameInput.addEventListener("change", function(){
+      var match = App.mealieMatchByName[nameInput.value.trim().toLowerCase()];
+      nameInput.dataset.mealieSlug = match ? match.slug : "";
+    });
+    wrap.querySelector(".remove-row").addEventListener("click", function(){ wrap.remove(); });
+
+    // Toppings - fristående lager per rätt, kopplat till topping-biblioteket.
+    wrap._toppings = (existing && existing.toppings) ? existing.toppings.slice() : [];
+    var toppingsBox = wrap.querySelector(".dish-toppings-box");
+    var toppingsToggle = wrap.querySelector(".dish-toppings-toggle");
+    function updateToppingsToggleLabel(){
+      var n = wrap._toppings.length;
+      toppingsToggle.textContent = n ? ("Toppings (" + n + ")") : "+ Toppings";
+    }
+    function renderDishToppingChips(){
+      wrap.querySelector(".dish-topping-chips").innerHTML = wrap._toppings.map(function(name, idx){
+        return '<span class="guest-chip">' + esc(name) +
+          '<button type="button" data-idx="' + idx + '" aria-label="Ta bort ' + esc(name) + '">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+          '</button></span>';
+      }).join("");
+      Array.prototype.forEach.call(wrap.querySelector(".dish-topping-chips").querySelectorAll("button"), function(btn){
+        btn.addEventListener("click", function(){
+          wrap._toppings.splice(parseInt(btn.getAttribute("data-idx"), 10), 1);
+          renderDishToppingChips();
+          updateToppingsToggleLabel();
+        });
+      });
+    }
+    function addToppingFromRowInput(){
+      var input = wrap.querySelector(".dish-topping-input");
+      var name = input.value.trim();
+      if (!name) return;
+      var exists = wrap._toppings.some(function(t){ return t.toLowerCase() === name.toLowerCase(); });
+      if (!exists) wrap._toppings.push(name);
+      input.value = "";
+      renderDishToppingChips();
+      updateToppingsToggleLabel();
+      input.focus();
+    }
+    toppingsToggle.addEventListener("click", function(){ toppingsBox.hidden = !toppingsBox.hidden; });
+    wrap.querySelector(".dish-topping-add").addEventListener("click", addToppingFromRowInput);
+    wrap.querySelector(".dish-topping-input").addEventListener("keydown", function(e){
+      if (e.key === "Enter"){ e.preventDefault(); addToppingFromRowInput(); }
+    });
+    updateToppingsToggleLabel();
+    renderDishToppingChips();
+    if (wrap._toppings.length) toppingsBox.hidden = false;
+
+    byId("fDishRows").appendChild(wrap);
+  }
+  byId("fDishAdd").addEventListener("click", function(){ addDishRow(); });
+
+  async function searchMealie(q){
+    try{
+      var results = await api("/api/mealie/search?q=" + encodeURIComponent(q));
+      var list = byId("mealieOptions");
+      list.innerHTML = "";
+      results.forEach(function(r){
+        App.mealieMatchByName[r.name.toLowerCase()] = r;
+        var opt = document.createElement("option");
+        opt.value = r.name;
+        list.appendChild(opt);
+      });
+    }catch(e){ /* tyst - fritext funkar ändå */ }
+  }
+
+  // Drycker i formuläret
+  function addDrinkRow(existing){
+    fDrinkRowCount++;
+    var id = "drink" + fDrinkRowCount;
+    var wrap = document.createElement("div");
+    wrap.className = "row-card";
+    wrap.dataset.rowId = id;
+    wrap.innerHTML =
+      '<button type="button" class="icon-btn remove-row" aria-label="Ta bort dryck">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>' +
+      '<input type="text" class="drink-name" placeholder="Namn, t.ex. Barolo eller “husets rödvin”" value="' + esc(existing ? existing.name : "") + '">' +
+      '<div class="drink-fields">' +
+        '<input type="text" class="drink-producer" placeholder="Producent (valfritt)" value="' + esc(existing ? existing.producer : "") + '">' +
+        '<input type="text" class="drink-vintage" placeholder="Årgång (valfritt)" value="' + esc(existing ? existing.vintage : "") + '">' +
+        '<input type="text" class="drink-price" placeholder="Pris (valfritt)" value="' + esc(existing ? existing.price : "") + '">' +
+        '<input type="url" class="drink-link" placeholder="Länk, t.ex. Systembolaget (valfritt)" value="' + esc(existing ? existing.link : "") + '">' +
+      '</div>' +
+      '<textarea class="drink-note" rows="2" placeholder="Anteckning (valfritt)">' + esc(existing ? existing.note : "") + '</textarea>';
+    wrap.querySelector(".remove-row").addEventListener("click", function(){ wrap.remove(); });
+    byId("fDrinkRows").appendChild(wrap);
+  }
+  byId("fDrinkAdd").addEventListener("click", function(){ addDrinkRow(); });
+
+  // Spara formulär
+  byId("dinnerForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var dishes = Array.prototype.map.call(byId("fDishRows").querySelectorAll(".row-card"), function(row){
+      var nameInput = row.querySelector(".dish-name");
+      return {
+        course: row.querySelector(".dish-course").value,
+        name: nameInput.value.trim(),
+        mealieSlug: nameInput.dataset.mealieSlug || null,
+        toppings: row._toppings || [],
+      };
+    }).filter(function(d){ return d.name; });
+
+    var drinks = Array.prototype.map.call(byId("fDrinkRows").querySelectorAll(".row-card"), function(row){
+      return {
+        name: row.querySelector(".drink-name").value.trim(),
+        producer: row.querySelector(".drink-producer").value.trim() || null,
+        vintage: row.querySelector(".drink-vintage").value.trim() || null,
+        price: row.querySelector(".drink-price").value.trim() || null,
+        link: row.querySelector(".drink-link").value.trim() || null,
+        note: row.querySelector(".drink-note").value.trim() || null,
+      };
+    }).filter(function(d){ return d.name; });
+
+    var overnightGuests = Array.prototype.map.call(
+      byId("fOvernightList").querySelectorAll(".overnight-check.done"),
+      function(btn){ return btn.getAttribute("data-name"); }
+    );
+
+    var payload = {
+      date: byId("fDate").value,
+      status: byId("fStatus").value,
+      title: byId("fTitle").value.trim() || null,
+      host: byId("fHost").value.trim() || null,
+      notes: byId("fNotes").value.trim() || null,
+      guests: fGuests,
+      overnightGuests: overnightGuests,
+      overnightFood: byId("fOvernightFood").value.trim() || null,
+      dishes: dishes,
+      drinks: drinks,
+    };
+
+    var submitBtn = byId("fSubmit");
+    submitBtn.disabled = true;
+    try{
+      if (App.editingId){
+        await api("/api/dinners/" + App.editingId, {
+          method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+        });
+      } else {
+        await api("/api/dinners", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+        });
+      }
+      closeForm();
+      await loadAll();
+      renderCurrentView();
+      byId("detailOverlay").hidden = true;
+    }catch(e){
+      alert("Kunde inte spara: " + e.message);
+    }finally{
+      submitBtn.disabled = false;
+    }
+  });
+
+  function renderCurrentView(){
+    if (App.view === "guests") renderGuestList();
+    else if (App.view === "families") renderFamilyList();
+    else if (App.view === "toppings") renderToppingList();
+    else renderDinnerGrid();
+  }
+
+  // ---------- Start ----------
+
+  async function loadAll(){
+    var results = await Promise.all([
+      api("/api/dinners").catch(function(){ return []; }),
+      api("/api/guests").catch(function(){ return []; }),
+      api("/api/hosts").catch(function(){ return []; }),
+      api("/api/config").catch(function(){ return App.config; }),
+      api("/api/toppings").catch(function(){ return []; }),
+      api("/api/families").catch(function(){ return []; }),
+    ]);
+    App.dinners = results[0];
+    App.guests = results[1];
+    App.config = results[3] || App.config;
+    App.toppings = results[4];
+    App.families = results[5];
+    byId("hostOptions").innerHTML = results[2].map(function(h){ return '<option value="' + esc(h) + '">'; }).join("");
+    byId("guestOptions").innerHTML = App.guests.map(function(g){ return '<option value="' + esc(g.name) + '">'; }).join("");
+    byId("toppingOptions").innerHTML = App.toppings.map(function(t){ return '<option value="' + esc(t.name) + '">'; }).join("");
+    var categories = [];
+    App.toppings.forEach(function(t){
+      if (t.category && categories.indexOf(t.category) === -1) categories.push(t.category);
+    });
+    byId("toppingCategoryOptions").innerHTML = categories.map(function(c){ return '<option value="' + esc(c) + '">'; }).join("");
+    renderFamilyChips();
+    byId("gNewFamily").innerHTML = '<option value="">Utan familj</option>' +
+      App.families.map(function(f){ return '<option value="' + f.id + '">' + esc(f.name) + '</option>'; }).join("");
+  }
+
+  async function boot(){
+    try{
+      await loadAll();
+    }catch(e){
+      byId("grid").innerHTML = '<div class="empty">Kunde inte hämta data. Kontrollera att containern är igång.</div>';
+      return;
+    }
+    renderDinnerGrid();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
